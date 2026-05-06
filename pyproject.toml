@@ -7,18 +7,15 @@ requires-python = ">=3.10"
 dependencies = [
     "grakel>=0.1.10",
     "magnipy",
-    "mantel>=2.2.2",
     "networkx>=3.4.2",
     "pygsp>=0.6.1",
     "torch-geometric>=2.7.0",
     "torch-cluster",
     "networkit>=11.2.1",
-    "hodgelaplacians>=0.1",
     "toper>=1.0.3",
     "gudhi>=3.11.0",
     "pyfqmr>=0.5.0",
     "pyvista>=0.47.1",
-    "curvature-filtrations>=0.1.2",
     "karateclub>=1.2.2",
     "giotto-tda>=0.6.0",
 ]
