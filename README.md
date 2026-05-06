@@ -7,10 +7,11 @@ distinguishing and clustering graphs from different distributions.
 
 ## Dependencies
 
-Our dependencies are managed with `uv. To get started, we recommend you to
+Our dependencies are managed with `uv`. To get started, we recommend you to
 install `uv` and then execute the following steps:
 1. Clone this repository locally.
-2. Run the command `uv sync` to install all neccessairy dependencies.
+2. Specify which Python version to use via `uv venv --python 3.10`.
+3. Run the command `uv sync` to install all neccessairy dependencies.
 
 ## Experiments
 
