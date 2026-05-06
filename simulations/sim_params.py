@@ -28,7 +28,7 @@ if __name__ == '__main__':
     random.seed(314)
     
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("--output_dir", type=str, default="./simulations/results/", help="Output directory for results")
+    argparser.add_argument("--output_dir", type=str, default="./simulations/results/sim_params", help="Output directory for results")
     argparser.add_argument('--models', type=str, nargs='*', default=None, help='select the models to be computed, has to be a subset of the models specifies in models_configs')
     argparser.add_argument('--ngraphs', type=int, default=1, help='Number of graphs that are generated per cardinality')
     argparser.add_argument('--nrange', type=int, nargs=2, default=[10,30], help='specify the range of cardinalities of the generated graphs')
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     scores = ['acc_mean', 'silh_mean', 'ari_agglo_mean', 'db_mean',	'ch_mean', 'ari_kmeans_mean']
     scores_asc = {'acc_mean': False, 'silh_mean': False, 'ari_agglo_mean': False, 'db_mean': True,'ch_mean': False, 'ari_kmeans_mean': False}
 
-    results_dir = f'{output_dir}/sim_params/nodes_{n_low}_to_{n_high}_stepsize_{n_steps}/n_graphs_{n_graphs}/'
+    results_dir = f'{output_dir}/nodes_{n_low}_to_{n_high}_stepsize_{n_steps}/n_graphs_{n_graphs}/'
 
     if not os.path.exists(results_dir):
         os.makedirs(results_dir)
