@@ -191,7 +191,7 @@ if __name__ == '__main__':
         res_dict[f'div_function_{metric}'] = {}
 
         def dist_fn(G):
-            return get_dist(G=G, X=None, X2=None, metric=metric, mode="structure")#"euclidean", mode="attributes") # structure # full
+            return get_dist(G=G, X=None, X2=None, metric=metric, mode="structure")
         
         # want to try what happens with ts = [1]
         all_spreads, weights_lists = get_mag_graphs(G_nx, dist_fn, ts=[1], upsample_to=upsample_to, downsample_to=downsample_to, n_repeats=3)

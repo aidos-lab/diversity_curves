@@ -10,7 +10,6 @@ def get_mag_graphs(graphs, dist_fn, ts, upsample_to=None, n_repeats=5, compute_a
     weights_lists = []
 
     for i, g in enumerate(graphs):
-        print(f"Processing graph {i} / {len(graphs)}")
         
         spreads_1 = []
         weight_dict = {}

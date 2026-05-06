@@ -23,11 +23,6 @@ dependencies = [
     "giotto-tda>=0.6.0",
 ]
 
-[project.optional-dependencies]
-mesh = [
-  "openmesh>=1.2.1"
-]
-
 [tool.uv.extra-build-dependencies]
 grakel-dev = ["pip"]
 torch-cluster = ["torch"]
