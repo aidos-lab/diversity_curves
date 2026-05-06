@@ -296,7 +296,7 @@ if __name__ == '__main__':
     # topER
     all_sub = []
     for filt in ["degree", "popularity", "fricci", "oricci", "closeness"]:
-        F = toper.main(G_nx, [filt])#, num_segm=501) "closeness",
+        F = toper.main(G_nx, [filt])
         if filt == "fricci":
             filt = "forricci"
         elif filt == "oricci":

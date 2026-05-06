@@ -1,14 +1,7 @@
 from __future__ import print_function
 import numpy as np
-import scipy
-
 import random
-
-from sklearn.model_selection import train_test_split
-from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score
-
-from grakel import Graph, graph_from_networkx
+from grakel import graph_from_networkx
 import networkx as nx
 
 
