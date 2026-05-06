@@ -1,13 +1,11 @@
 import toper
-import pandas as pd
 import numpy as np
 
 def toper_emb(graph_list, filtrations, sub=True, num_segm=501):
-    ### ["degree", "popularity", "fricci", "oricci", "closeness"]
     all_sub = []
     for filt in filtrations:
         #, "weight"]:
-        F = toper.main(graph_list, [filt], num_segm=num_segm)#, num_segm=501) "closeness",
+        F = toper.main(graph_list, [filt], num_segm=num_segm)
         if filt == "fricci":
             filt = "forricci"
         elif filt == "oricci":
