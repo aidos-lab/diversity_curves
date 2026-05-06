@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from diversity_curves.weight_diff import compute_magnitude_graph
+from diversity_curves.diversity import compute_magnitude_graph
 
 def get_mag_graphs(graphs, dist_fn, ts, upsample_to=None, n_repeats=5, compute_at_cardinality=None, mode="full", scores_method="random", upsample_method="nodes", downsample_to=None, upsample_mode = 'node_duplicating'):
     spread_dfs = []

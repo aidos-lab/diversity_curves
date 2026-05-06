@@ -9,7 +9,6 @@ from diversity_curves.utils import make_splits
 def knn_classifier(X, y, precomputed=True, seed=42, outer_k=10, holdout_test_size=0.1, k=5, groups=None):
     y = np.asarray(y)
     test_accs = []
-    n = X.shape[0]
 
     indices = make_splits(np.array([i for i in range(len(y))]), y, outer_k=outer_k, inner_k=None, holdout_test_size=holdout_test_size, seed=seed, stratify=True, groups=groups)
 

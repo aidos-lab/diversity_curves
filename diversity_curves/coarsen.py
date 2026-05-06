@@ -1,7 +1,7 @@
 import random
 import numpy as np
 from magnipy.magnitude.compute import compute_magnitude_subgraphs_with_dist, compute_magnitude_from_distances 
-from diversity_curves.weight_diff import compute_magnitude_subgraphs, compute_magnitude_graph
+from diversity_curves.diversity import compute_magnitude_subgraphs, compute_magnitude_graph
 import networkx as nx
 
 
