@@ -78,8 +78,6 @@ if __name__ == '__main__':
 
     res_dict = {}
 
-    # results_dir = f'{output_dir}/{configuration}/nodes_{n_low}_to_{n_high}_stepsize_{n_steps}/n_graphs_{n_graphs}/'
-
     if not os.path.exists(results_dir): 
         os.makedirs(results_dir, exist_ok=True) 
 
