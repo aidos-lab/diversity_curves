@@ -30,7 +30,7 @@ if __name__ == '__main__':
     argparser = argparse.ArgumentParser()
     argparser.add_argument("--output_dir", type=str, default="./simulations/results/sim_params", help="Output directory for results")
     argparser.add_argument('--models', type=str, nargs='*', default=None, help='select the models to be computed, has to be a subset of the models specifies in models_configs')
-    argparser.add_argument('--ngraphs', type=int, default=1, help='Number of graphs that are generated per cardinality')
+    argparser.add_argument('--ngraphs', type=int, default=3, help='Number of graphs that are generated per cardinality')
     argparser.add_argument('--nrange', type=int, nargs=2, default=[10,30], help='specify the range of cardinalities of the generated graphs')
     argparser.add_argument('--nsteps', type=int, default=1, help='Specify the stepsize for the cardinalities of the generated graphs')
 
@@ -368,8 +368,6 @@ if __name__ == '__main__':
 
         for filtration in ph_filtrations:
             model_results[f'persistent_homology_{filtration}'] = {}
-            model_results[f'persistent_homology_mds_{filtration}'] = {}
-            model_results[f'persistent_homology_pca_{filtration}'] = {}
 
             print(f'computing persistent homology with {filtration} filtration.')
             success = False
