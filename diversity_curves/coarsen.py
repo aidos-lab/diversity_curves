@@ -1,4 +1,3 @@
-"Coarsen the graphs in a hierarchical manner to get a filtration of graphs."
 import random
 import numpy as np
 from magnipy.magnitude.compute import compute_magnitude_subgraphs_with_dist, compute_magnitude_from_distances 
