@@ -57,11 +57,6 @@ def compute_magnitude_graph(
         of the ith observation evaluated at the jth scaling parameter).
     ts : array_like, shape (`n_ts`, )
         The scales at which magnitude has been evaluated.
-
-    References
-    ----------
-    .. [1] Limbeck, K., Andreeva, R., Sarkar, R. and Rieck, B., 2024.
-        Metric Space Magnitude for Evaluating the Diversity of Latent Representations.
     """
 
     subgraphs = [G.subgraph(c).copy() for c in nx.connected_components(G)]
@@ -248,12 +243,6 @@ def guess_convergence_scale(D, comp_mag, target_value, guess=10):
     -------
     t_conv : float
         The scaling parameter at which the magnitude function reaches the target value.
-
-    References
-    ----------
-    .. [1] Limbeck, K., Andreeva, R., Sarkar, R. and Rieck, B., 2024.
-        Metric Space Magnitude for Evaluating the Diversity of Latent Representations.
-        arXiv preprint arXiv:2311.16054.
     """
 
     def f(x, W=D):
