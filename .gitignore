@@ -42,4 +42,4 @@ venv.bak/
 
 # Other
 uv.lock
-simulations/results/.
+simulations/results/*

@@ -1,7 +1,7 @@
 "Coarsen the graphs in a hierarchical manner to get a filtration of graphs."
 import random
 import numpy as np
-from magnipy.magnitude.compute import compute_magnitude_subgraphs_with_dist, compute_magnitude_from_distances #, compute_magnitude_graph
+from magnipy.magnitude.compute import compute_magnitude_subgraphs_with_dist, compute_magnitude_from_distances 
 from diversity_curves.weight_diff import compute_magnitude_subgraphs, compute_magnitude_graph
 import networkx as nx
 
@@ -19,11 +19,9 @@ def get_scores_edge(this_graph, edges, dist_fn, ts, original_magni, subgraphs, m
         mags_steps = []
         for i, subgraph in enumerate(subgraphs):
             if edge[0] not in subgraph.nodes() or edge[1] not in subgraph.nodes():
-                #continue
                 mags_steps.append(mags[i])
             else:
                 step_graph = subgraph.copy()
-                nodes = [m for m in step_graph.nodes()]
                 node_a, node_b = edge
 
                 # Merge node_a and node_b into node_a
@@ -55,7 +53,6 @@ def get_scores_edge_approx_dist(this_graph, edges, dist_fn, ts, original_magni, 
         mags_steps = []
         for i, subgraph in enumerate(subgraphs):
             if edge[0] not in subgraph.nodes() or edge[1] not in subgraph.nodes():
-                #continue
                 mags_steps.append(mags[i])
             else:
                 step_graph = subgraph.copy()
@@ -72,15 +69,12 @@ def get_scores_edge_approx_dist(this_graph, edges, dist_fn, ts, original_magni, 
                 D_sub = Ds[i].copy()
 
                 for neighbor in merged_neighbors:
-                    #print(nodes.index(node_a), nodes.index(neighbor))
                     weight = min(D[nodes.index(node_a),:][nodes.index(neighbor)],
                                 D[nodes.index(node_b),:][nodes.index(neighbor)])
                     D_sub[nodes.index(node_a), nodes.index(neighbor)] = weight
-                    #step_graph.add_edge(node_a, neighbor, weight=weight)
 
                 index_b = nodes.index(node_b)
 
-                #D_sub = D[-index_b, :]
                 D_sub = np.delete(D_sub, index_b, axis=0)
                 D_sub = np.delete(D_sub, index_b, axis=1)
 
@@ -132,9 +126,7 @@ def get_upsample_nodes(G, n_samples):
     sampled_nodes = []
     for j in range(n_rep):
         sampled_nodes += list(np.random.permutation(list(G.nodes())))  # Add all original nodes multiple times
-    # Randomly sample nodes with replacement
     sampled_nodes += list(np.random.choice(list(G.nodes()), size=n_mod, replace=False))
-    #all_nodes = list(G.nodes()) + [str(j)+"_new" for j in range(n_samples)]
     return sampled_nodes
 
 #  ╭──────────────────────────────────────────────────────────╮
@@ -144,7 +136,6 @@ def get_upsample_nodes(G, n_samples):
 
 def mag_edge_pooling(g, ts, dist_fn, original_magni=None, n_steps=None, method="cholesky", scores_method ="full", 
                      get_weights=False, upsample_to=None, upsample_mode = 'node_duplicating', compute_at_cardinality=None, mode="structure", upsample_method="nodes"):
-    ### This function is used to drop nodes from a graph in order to minimise the magnitude difference after removal.
 
     magnitudes = []
     n_nodes = []
@@ -269,7 +260,6 @@ def mag_edge_pooling(g, ts, dist_fn, original_magni=None, n_steps=None, method="
             else:
                 raise IndexError(f"Index indx_b={indx_b} is out of bounds for array S with shape {S.shape}")
 
-        #this_graph = nx.contracted_edge(this_graph, chosen_edge, self_loops=False)
         scores.pop(chosen_index)
         edges.pop(chosen_index)
 
@@ -382,5 +372,4 @@ def repeat_edge_dropping(g, ts, dist_fn, original_magni=None, n_steps=None, meth
         if mode != "structure":
             S = np.dot(S_new,S)
         
-
     return this_graph, S, magnitudes, n_nodes_list, weight_list
