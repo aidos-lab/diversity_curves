@@ -15,7 +15,7 @@ from sklearn.manifold import MDS
 from sklearn.decomposition import PCA
 
 from magnipy.magnitude.distances import get_dist
-from diversity_curves.process import get_mag_graphs, get_funs_diff, get_funs_df, get_mag_funs_graphs
+from diversity_curves.process import get_mag_graphs, get_funs_df, get_mag_funs_graphs
 
 from diversity_curves.simulate import simulate_graphs_kwargs
 from diversity_curves.classifiers import knn_classifier
