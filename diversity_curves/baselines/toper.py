@@ -1,0 +1,22 @@
+import toper
+import pandas as pd
+import numpy as np
+
+def toper_emb(graph_list, filtrations, sub=True, num_segm=501):
+    ### ["degree", "popularity", "fricci", "oricci", "closeness"]
+    all_sub = []
+    for filt in filtrations:
+        #, "weight"]:
+        F = toper.main(graph_list, [filt], num_segm=num_segm)#, num_segm=501) "closeness",
+        if filt == "fricci":
+            filt = "forricci"
+        elif filt == "oricci":
+            filt = "olricci"
+
+        if sub:
+            array = np.array(F[f"{filt}_sub"])
+        else:
+            array = np.array(F[f"{filt}_super"])
+        all_sub.append(array)
+    all_sub = np.concatenate(all_sub, axis=1)
+    return all_sub
