@@ -1,7 +1,4 @@
 from __future__ import print_function
-#print(__doc__)
-## code from https://ysig.github.io/GraKeL/0.1a8/auto_examples/erdos_renyi.html
-
 import numpy as np
 import scipy
 

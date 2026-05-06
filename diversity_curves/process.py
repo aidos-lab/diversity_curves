@@ -3,19 +3,11 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-
 from diversity_curves.weight_diff import compute_magnitude_graph
-
-#metric_name = "attributed_diffusion_distance"#"euclidean"#"diffusion_distance"
-#def dist_fn(G):
-#    return attributed_diffusion_distance(G=G, alpha=10) # structure # full
-
-
 
 def get_mag_graphs(graphs, dist_fn, ts, upsample_to=None, n_repeats=5, compute_at_cardinality=None, mode="full", scores_method="random", upsample_method="nodes", downsample_to=None, upsample_mode = 'node_duplicating'):
     spread_dfs = []
     weights_lists = []
-    #all_repeats = []
 
     for i, g in enumerate(graphs):
         print(f"Processing graph {i} / {len(graphs)}")
@@ -27,11 +19,9 @@ def get_mag_graphs(graphs, dist_fn, ts, upsample_to=None, n_repeats=5, compute_a
             if g.nodes[first_node].get("feature") is None:
                 for n in g.nodes():
                     g.nodes[n]["feature"] = np.array([1.0])
-        #tg = g.copy()
-        #these_repeats = []
+     
         for seed in range(n_repeats):
-            np.random.seed(seed) # [1]
-            #this_graph, S, spread, n_nodes_spread, weight_list = repeat_edge_dropping(g, "conv", dist_fn, original_magni=None, n_steps=g.number_of_nodes(), method="spread", scores_method ="random", get_weights=True)
+            np.random.seed(seed)
             if downsample_to:
                 n_steps = g.number_of_nodes() - downsample_to
             else:
@@ -47,14 +37,7 @@ def get_mag_graphs(graphs, dist_fn, ts, upsample_to=None, n_repeats=5, compute_a
                 if nodes not in weight_dict:
                     weight_dict[nodes] = []
                 weight_dict[nodes].append(weights)
-            #these_repeats.append([seed for _ in range(len(n_nodes_spread))])
-            #all_repeats.append(pd.Series(np.concatenate(these_repeats)))
-            #spreads_1
         for key in weight_dict:
-            #weights = np.array(weight_dict[key])
-            #if len(weights.shape) == 1:
-            #    weight_dict[key] = np.array([weight_dict[key]])
-            #else:
             weight_dict[key] = np.mean(weight_dict[key], axis=0)
         weights_lists.append(weight_dict)
         spread_df = pd.DataFrame()
@@ -66,7 +49,6 @@ def get_mag_graphs(graphs, dist_fn, ts, upsample_to=None, n_repeats=5, compute_a
         spread_dfs.append(spread_df)
 
     all_spreads = pd.concat(spread_dfs, axis=0)
-    #all_spreads["repeat"] = pd.concat(all_repeats, axis=0).reset_index(drop=True)
     return all_spreads, weights_lists
 
 def get_mag_funs_graphs(graphs, dist_fn, ts, method="spread", get_weights=False):
@@ -79,7 +61,6 @@ def get_mag_funs_graphs(graphs, dist_fn, ts, method="spread", get_weights=False)
             magnitudes.append(this_magnitude)
             weight_list.append(mag)
         else:
-            #total_magnitude = np.sum([mag for mag in mags], axis=0)
             this_magnitude = mag
             magnitudes.append(this_magnitude)
             weight_list.append(None)
