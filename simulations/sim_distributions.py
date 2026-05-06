@@ -28,14 +28,14 @@ if __name__ == '__main__':
     random.seed(314)
 
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("--output_dir", type=str, default="./simulations/results/sim_distributions", help="Output directory for results")
+    argparser.add_argument("--output_dir", type=str, default="./simulations/results/sim_distributions/", help="Output directory for results")
     argparser.add_argument('--ngraphs', type=int, default=3, help='Number of graphs that are generated per cardinality')
     argparser.add_argument('--nrange', type=int, nargs=2, default=[10,30], help='specify the range of cardinalities of the generated graphs')
     argparser.add_argument('--nsteps', type=int, default=1, help='Specify the stepsize for the cardinalities of the generated graphs')
     
 
     args = argparser.parse_args()
-    output_dir = args.output_dir
+    results_dir = args.output_dir
     n_low = args.nrange[0]
     n_high = args.nrange[1]
     n_steps = args.nsteps
@@ -78,7 +78,7 @@ if __name__ == '__main__':
 
     res_dict = {}
 
-    results_dir = f'{output_dir}/{configuration}/nodes_{n_low}_to_{n_high}_stepsize_{n_steps}/n_graphs_{n_graphs}/'
+    # results_dir = f'{output_dir}/{configuration}/nodes_{n_low}_to_{n_high}_stepsize_{n_steps}/n_graphs_{n_graphs}/'
 
     if not os.path.exists(results_dir): 
         os.makedirs(results_dir, exist_ok=True) 
@@ -159,6 +159,8 @@ if __name__ == '__main__':
         pca_embedding = PCA(n_components=2)
         X_pca = pca_embedding.fit_transform(np.array(mag_funs_interpolated))
 
+
+        # computing clustering scores and accuracies on transformed data from PCA
         if n_graphs > 1:
             test_accs = knn_classifier(X_pca, np.array(y), precomputed=False, groups=np.array(n_nodes))
         else:
@@ -166,16 +168,16 @@ if __name__ == '__main__':
         
         res_dict[f'divcurves_pca_{metric}']['acc_mean'] = np.mean(test_accs)
         res_dict[f'divcurves_pca_{metric}']['acc_std'] = np.std(test_accs)
-
-        # computing clustering scores and accuracies on transformed data from PCA
         all_clustering_results_euclidean(f'divcurves_pca_{metric}', res_dict, X_pca, y)
+
+        # creating plots
         fig = sns.scatterplot(x=X_pca[:,0], y=X_pca[:,1], hue=hue_names, palette='tab10')
         fig.legend(
             frameon=False, 
             loc=(1.04, 0),
             bbox_to_anchor=(1, 0.5)
             )
-        # sns.despine()
+        sns.despine()
         plt.savefig(results_dir + f"divcurves_pca_{metric}.pdf", dpi=300, format='pdf', bbox_inches="tight")
         plt.savefig(results_dir + f"divcurves_pca_{metric}.png", dpi=300, format='png', bbox_inches="tight")
         plt.close()
