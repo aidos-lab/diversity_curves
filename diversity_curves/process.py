@@ -20,7 +20,7 @@ def get_mag_graphs(graphs, dist_fn, ts, upsample_to=None, n_repeats=5, compute_a
                     g.nodes[n]["feature"] = np.array([1.0])
      
         for seed in range(n_repeats):
-            np.random.seed(seed)
+            # np.random.seed(seed)
             if downsample_to:
                 n_steps = g.number_of_nodes() - downsample_to
             else:
