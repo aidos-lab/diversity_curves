@@ -16,6 +16,8 @@ install `uv` and then execute the following steps:
 
 ## Experiments
 
+### Diversity curves distinguish graph distributions
+
 The experiment to distinguish graph distributions is in the script 
 `sim_distributions.py`, and the experiment for distinguishing parameter
 choices is in the scripts `sim_params.py`.
@@ -35,4 +37,9 @@ diversity curves will also be created. After running the script, you can run the
 `sim_params.ipynb` to reproduce the full tables and the plot of the silhouette 
 scores. 
 
+### Diversity curves distinguish trajectory or cluster structures in single-cell graphs
 
+To run the single-cell experiment, the processed single-cell datasets and geometry scores by Lim and Qui should be downloaded as described in 
+[https://github.com/pqiu/Quantifying_clusterness_trajectoriness/tree/main/data](https://github.com/pqiu/Quantifying_clusterness_trajectoriness/tree/main/data) and saved in `./data/sc/`.
+
+Then, the notebook in `./single_cell/single_cell.ipynb` can be used to reproduce the main results used in the paper from the precomputed graph embeddings saved in `./single_cell/results`. To recompute the graph embeddings, one can run `single_cell/run_baselines.sh`.
