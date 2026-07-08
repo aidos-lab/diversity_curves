@@ -1,10 +1,11 @@
 import toper
 import numpy as np
 
+
 def toper_emb(graph_list, filtrations, sub=True, num_segm=501):
     all_sub = []
     for filt in filtrations:
-        #, "weight"]:
+        # , "weight"]:
         F = toper.main(graph_list, [filt], num_segm=num_segm)
         if filt == "fricci":
             filt = "forricci"

@@ -89,9 +89,7 @@ def compute_magnitude_graph(
                         "The target value needs to be smaller than the cardinality!"
                     )
                 if 0 >= target_value:
-                    raise Exception(
-                        "The target value needs to be larger than 0!"
-                    )
+                    raise Exception("The target value needs to be larger than 0!")
 
             t_conv = guess_convergence_scale(
                 G, comp_mag=comp_mag, target_value=target_value, guess=10
@@ -170,7 +168,7 @@ def compute_magnitude_subgraphs(
     ts : array_like, shape (`n_ts`, )
         The scales at which magnitude has been evaluated.
     """
-    #original_G = copy.deepcopy(G)
+    # original_G = copy.deepcopy(G)
     if subgraphs is None:
         subgraphs = [G.subgraph(c).copy() for c in nx.connected_components(G)]
     mags = []
@@ -180,14 +178,10 @@ def compute_magnitude_subgraphs(
             D = dist_fn(G=s)
             # D = dist_fn(G=s)
         elif mode == "attributes":
-            features = np.array(
-                [s.nodes[node]["feature"] for node in s.nodes()]
-            )
+            features = np.array([s.nodes[node]["feature"] for node in s.nodes()])
             D = dist_fn(X=features)
         elif mode == "full":
-            features = np.array(
-                [s.nodes[node]["feature"] for node in s.nodes()]
-            )
+            features = np.array([s.nodes[node]["feature"] for node in s.nodes()])
             D = dist_fn(X=features, G=s)
             # D_struct = dist_fn(G=s)
             # D = D_attr + D_struct
@@ -205,10 +199,10 @@ def compute_magnitude_subgraphs(
         mags.append(mag)
 
     if get_weights:
-        #weights = np.zeros((original_G.number_of_nodes(), len(ts)))
-        #node_idx = {node: idx for idx, node in enumerate(original_G.nodes)}
+        # weights = np.zeros((original_G.number_of_nodes(), len(ts)))
+        # node_idx = {node: idx for idx, node in enumerate(original_G.nodes)}
 
-        #for subgraph, (mag) in zip(subgraphs, mags):
+        # for subgraph, (mag) in zip(subgraphs, mags):
         #    for nn, node in enumerate(subgraph.nodes):
         #        weights[node_idx[node], :] = mag[nn]
         mag_weights = np.vstack(mags)
@@ -217,7 +211,6 @@ def compute_magnitude_subgraphs(
     else:
         total_magnitude = np.sum([mag for mag in mags], axis=0)
         return total_magnitude, ts
-    
 
 
 def guess_convergence_scale(D, comp_mag, target_value, guess=10):

@@ -13,6 +13,7 @@ from gtda.diagrams import PersistenceImage
 
 # filtrations.py
 
+
 def generate_shortest_path_distance_matrix(G: nx.Graph):
     shortest_paths = nx.all_pairs_shortest_path_length(G)
     nodes = G.nodes
@@ -21,6 +22,7 @@ def generate_shortest_path_distance_matrix(G: nx.Graph):
         for target_node, distance in shortest_paths_to_node.items():
             distance_matrix[node, target_node] = distance
     return distance_matrix
+
 
 def vietoris_rips(G: nx.Graph) -> gd.RipsComplex:
     distance_matrix = generate_shortest_path_distance_matrix(G)
@@ -32,7 +34,9 @@ def alpha_complex(G: nx.Graph, num_components_points: int = 3) -> gd.AlphaComple
     # Graphs have no coordinates by default. So first we embed the graph into the euclidean space. We use an spectral
     # embedding technique given by Laplacian Eigenmaps.
     adj = nx.adjacency_matrix(G).todense()
-    emb = spectral_embedding(adj, n_components=num_components_points, eigen_solver='lobpcg')
+    emb = spectral_embedding(
+        adj, n_components=num_components_points, eigen_solver="lobpcg"
+    )
     cplx = gd.AlphaComplex(points=emb)
     return cplx
 
@@ -229,6 +233,7 @@ def laplacian_eigenvalues(G: nx.Graph) -> np.ndarray:
         warnings.simplefilter(action="ignore", category=FutureWarning)
         return nx.laplacian_spectrum(G)
 
+
 def get_filtration_function(filtration_type: str) -> callable:
     """
     It returns the filtration function and a boolean to indicate if it is a node-level filtration.
@@ -250,7 +255,8 @@ def get_filtration_function(filtration_type: str) -> callable:
             return alpha_complex, False
         case _:
             raise TypeError(f"Filtration type {filtration_type} not recognized.")
-        
+
+
 # utils.py
 def propagate_node_attribute_to_edges(G, attribute, pooling_fn=max):
     """Propagate a node attribute to edges.
@@ -328,6 +334,7 @@ def propagate_edge_attribute_to_nodes(G, attribute, pooling_fn=np.sum):
 
     nx.set_node_attributes(G, node_attributes, name=attribute)
 
+
 def pad_diagrams(diagrams):
     """Pad persistence diagrams to be of the same length."""
     D = np.vstack(diagrams)
@@ -361,6 +368,8 @@ def pad_diagrams(diagrams):
             diagrams[index] = np.vstack((diagram, padding))
 
     return diagrams
+
+
 # diagrams.py
 def obtain_persistence_diagram(st: gd.SimplexTree, k: int):
     persistence_pairs = st.persistence(persistence_dim_max=True)
@@ -380,15 +389,17 @@ def obtain_persistence_diagram(st: gd.SimplexTree, k: int):
     return diagrams
 
 
-
 def calculate_persistent_homology_from_rips_complex(cmplx: gd.RipsComplex, k: int = 3):
     st = cmplx.create_simplex_tree(max_dimension=k)
     return obtain_persistence_diagram(st, k)
 
 
-def calculate_persistent_homology_from_alpha_complex(cmplx: gd.AlphaComplex, k: int = 3):
+def calculate_persistent_homology_from_alpha_complex(
+    cmplx: gd.AlphaComplex, k: int = 3
+):
     st = cmplx.create_simplex_tree()
     return obtain_persistence_diagram(st, k)
+
 
 def calculate_persistent_homology(G: nx.Graph, k: int = 3):
     """Calculate persistent homology of graph clique complex."""
@@ -406,8 +417,9 @@ def calculate_persistent_homology(G: nx.Graph, k: int = 3):
     st.expansion(k)
     return obtain_persistence_diagram(st, k)
 
+
 def get_filtration_annotated_graph_non_vr(
-        graph: nx.Graph, filtration_fn: callable, node_level: bool = False
+    graph: nx.Graph, filtration_fn: callable, node_level: bool = False
 ) -> nx.Graph:
     graph = graph.copy()  # We don't want to change the original graph
     filtration_values = filtration_fn(graph)
@@ -430,16 +442,18 @@ def get_filtration_annotated_graph_non_vr(
         nx.set_node_attributes(graph, -1, "filtration")
     return graph
 
+
 def get_filtration_annotated_graph(
-        graph: nx.Graph, filtration_fn: callable, node_level: bool = False
+    graph: nx.Graph, filtration_fn: callable, node_level: bool = False
 ) -> nx.Graph:
     if filtration_fn in [vietoris_rips, alpha_complex]:
         return filtration_fn(graph)
     else:
         return get_filtration_annotated_graph_non_vr(graph, filtration_fn, node_level)
 
+
 def calculate_persistence_diagram(
-        graph: nx.Graph, filtration_fn: callable, k: int, node_level: bool = False
+    graph: nx.Graph, filtration_fn: callable, k: int, node_level: bool = False
 ) -> np.ndarray:
     if filtration_fn == vietoris_rips:
         cmplx = filtration_fn(graph)
@@ -454,8 +468,9 @@ def calculate_persistence_diagram(
     diagrams = np.vstack(diagrams)
     return diagrams
 
+
 def calculate_persistence_diagrams(
-        graphs: list[nx.Graph], filtration_fn: callable, k: int, node_level: bool = False
+    graphs: list[nx.Graph], filtration_fn: callable, k: int, node_level: bool = False
 ) -> list[np.ndarray]:
     persistence_diagrams = [
         calculate_persistence_diagram(graph, filtration_fn, k, node_level)
