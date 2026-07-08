@@ -1,5 +1,6 @@
 
 method_names=(
+    "features"
     "spread"
     "netlsd"
     "toper"
