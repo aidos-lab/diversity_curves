@@ -11,7 +11,8 @@ Our dependencies are managed with `uv`. To get started, we recommend you to
 install `uv` and then execute the following steps:
 1. Clone this repository locally.
 2. Specify which Python version to use via `uv venv --python 3.10`.
-3. Run the command `uv sync` to install all neccessairy dependencies.
+3. Run the command `uv sync` to install all neccessary dependencies.
+4. Install this repository locally using for example `uv pip install -e .`.
 
 ## Experiments
 
