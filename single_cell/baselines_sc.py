@@ -1,60 +1,18 @@
 import scanpy as sc
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
-import umap
-import random
-from matplotlib.image import BboxImage
-from matplotlib.transforms import Bbox, TransformedBbox
-from sklearn.neighbors import KNeighborsClassifier
 import pickle
-from tqdm import tqdm
 import pandas as pd
-import glob
-from sklearn.decomposition import PCA
-from sklearn.neighbors import kneighbors_graph
 from anndata import AnnData
-from scipy.spatial import distance
-from numpy import linalg as LA
-from sklearn.cluster import KMeans
-from sklearn.neighbors import NearestNeighbors
-from sklearn.metrics.pairwise import euclidean_distances
-import sklearn
-import pandas as pd
-from sklearn.manifold import TSNE
-import umap
-import glob, os
-from sklearn.neighbors import kneighbors_graph
-import time
-import sys
-from scipy import sparse
-from scipy.stats import rankdata
-from scipy.stats import entropy
-from sklearn.preprocessing import StandardScaler, Normalizer
-from sklearn.neighbors import KNeighborsClassifier
-import random
-from pathlib import Path
 from geosketch import gs
 import networkx as nx
 from diversity_curves.process import (
     get_mag_graphs,
-    get_weight_diffs,
-    get_funs_diff,
-    get_mag_areas,
-    get_mag_funs_graphs,
     get_funs_df,
 )
 from magnipy.magnitude.distances import get_dist
-import pandas as pd
-from diversity_curves.coarsen import repeat_edge_dropping
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from diversity_curves.diversity import compute_magnitude_graph
 import signal
 import argparse
-import time
 import os
 import pickle as pkl
 
