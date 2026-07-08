@@ -37,7 +37,10 @@ def get_mag_graphs(graphs, dist_fn, ts, upsample_to=None, n_repeats=5, compute_a
                     weight_dict[nodes] = []
                 weight_dict[nodes].append(weights)
         for key in weight_dict:
-            weight_dict[key] = np.mean(weight_dict[key], axis=0)
+            try:
+                weight_dict[key] = np.mean(weight_dict[key], axis=0)
+            except:
+                print("error with weights")
         weights_lists.append(weight_dict)
         spread_df = pd.DataFrame()
         for df in spreads_1:
