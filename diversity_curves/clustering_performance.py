@@ -26,7 +26,7 @@ def compute_rand_kmeans(X, labels_true):
         indices = np.random.choice(len(X), size=int(len(X) * 0.5), replace=False)
         X_sample = X[indices]
         labels_sample = np.array(labels_true)[indices]
-        # usink k-means for clustering
+        #using k-means for clustering
         _, label_kmean, _ = k_means(
             X_sample,
             n_clusters=len(np.unique(labels_sample)),
