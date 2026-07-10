@@ -7,6 +7,7 @@ from sklearn.model_selection import (
     StratifiedGroupKFold,
     GroupKFold,
 )
+import networkx as nx
 
 #  ╭──────────────────────────────────────────────────────────╮
 #  │ Cross Validation Splits                                  │
@@ -109,3 +110,13 @@ def make_inner_split(all_idxs, targets, inner_k=10, holdout_test_size=0.1, seed=
     indices.append([train_i_split, val_i_split])
 
     return indices
+
+
+def pyg_dataset_to_networkx(gm_train):
+    labels = []
+    nx_graphs = []
+    for data in gm_train:
+        edges_list = data.edge_index.numpy().T.tolist()
+        G = nx.Graph(edges_list)
+        nx_graphs.append(G)
+    return labels, nx_graphs
