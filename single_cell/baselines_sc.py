@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
     if os.path.exists(results_path) == False:
         os.makedirs(results_path)
-    
+
     subset_data = []
     if os.path.exists(f"{results_path}G_nx.pkl") and not (method == "features"):
         G_nx = pkl.load(open(f"{results_path}G_nx.pkl", "rb"))
@@ -261,13 +261,11 @@ if __name__ == "__main__":
         embeddings = []
         embeddings_scaled = []
         for i, graph in enumerate(G_nx):
-            features = np.array(
-                [graph.nodes[n]["feature"] for n in graph.nodes()]
-            )
+            features = np.array([graph.nodes[n]["feature"] for n in graph.nodes()])
             mean_pool = features.mean(axis=0)
             embeddings_scaled.append(mean_pool)
             features = subset_data[i]
-            #features = 
+            # features =
             mean_pool = features.mean(axis=0)
             embeddings.append(mean_pool)
 
@@ -275,4 +273,6 @@ if __name__ == "__main__":
         array_scaled = np.array(embeddings_scaled)
 
         pd.DataFrame(array).to_csv(f"{results_path}features_pooled.csv", index=False)
-        pd.DataFrame(array_scaled).to_csv(f"{results_path}scaled_features_pooled.csv", index=False)
+        pd.DataFrame(array_scaled).to_csv(
+            f"{results_path}scaled_features_pooled.csv", index=False
+        )

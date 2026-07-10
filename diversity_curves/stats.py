@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+
 def two_sample_test_matrix(
     df,
     class_col="class",
@@ -75,7 +76,11 @@ def two_sample_test_matrix(
 
     # Mirror the lower triangle to the upper triangle
     test_results = test_results + test_results.T - np.diag(test_results.diagonal())
-    test_results_stats = test_results_stats + test_results_stats.T - np.diag(test_results_stats.diagonal())
+    test_results_stats = (
+        test_results_stats
+        + test_results_stats.T
+        - np.diag(test_results_stats.diagonal())
+    )
 
     p_values = pd.DataFrame(test_results, index=class_names, columns=class_names)
     stats = pd.DataFrame(test_results_stats, index=class_names, columns=class_names)
