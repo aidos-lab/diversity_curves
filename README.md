@@ -43,3 +43,7 @@ To run the single-cell experiment, the processed single-cell datasets and geomet
 [https://github.com/pqiu/Quantifying_clusterness_trajectoriness/tree/main/data](https://github.com/pqiu/Quantifying_clusterness_trajectoriness/tree/main/data) and saved in `./data/sc/`.
 
 Then, the notebook in `./single_cell/single_cell.ipynb` can be used to reproduce the main results used in the paper from the precomputed graph embeddings saved in `./single_cell/results`. To recompute the graph embeddings, one can run `single_cell/run_baselines.sh`.
+
+### Diversity curves characterise molecular graph datasets
+
+The notebook in `./enzymes/two_sample_test_enzymes.ipynb` can be used to reproduce the main results used in the paper from the precomputed graph embeddings saved in `./enzymes/results`. To recompute the graph embeddings, one can run `./enzymes/embeddings.sh`.
