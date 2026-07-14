@@ -374,14 +374,14 @@ def mag_edge_pooling(
 
             if get_weights:
                 weights, this_ts = compute_magnitude_subgraphs(
-                    this_graph, dist_fn=dist_fn, ts=ts, get_weights=True, method=method
+                    this_graph, dist_fn=dist_fn, ts=ts, get_weights=True, method=method, mode=mode
                 )
                 this_magnitude = np.sum(weights)
                 magnitudes.append(this_magnitude)
             else:
                 weights = None
                 this_magnitude, this_ts = compute_magnitude_subgraphs(
-                    this_graph, dist_fn=dist_fn, ts=ts, get_weights=False, method=method
+                    this_graph, dist_fn=dist_fn, ts=ts, get_weights=False, method=method, mode=mode
                 )
                 magnitudes.append(this_magnitude[0])
             n_nodes.append(this_graph.number_of_nodes())
@@ -507,3 +507,93 @@ def repeat_edge_dropping(
             S = np.dot(S_new, S)
 
     return this_graph, S, magnitudes, n_nodes_list, weight_list
+
+#  ╭──────────────────────────────────────────────────────────╮
+#  │ Diversity curves based on other pooling operations       │
+#  ╰──────────────────────────────────────────────────────────╯
+
+def coarsened_diversity(
+    g,
+    ts,
+    dist_fn,
+    pool_fn,
+    original_magni=None,
+    #n_steps=None,
+    get_weights=False,
+    compute_at_cardinality=None,
+    method = "cholesky",
+    mode="structure",
+):
+
+    magnitudes = []
+    n_nodes = []
+    weight_list = []
+
+    n = g.number_of_nodes()
+
+    if compute_at_cardinality is None:
+        compute_here = True
+        min_cardinality = 1
+    elif n in compute_at_cardinality:
+        compute_here = True
+        min_cardinality = min(compute_at_cardinality)
+    else:
+        compute_here = False
+        min_cardinality = min(compute_at_cardinality)
+
+
+    if compute_here:
+        mag0, _ = compute_magnitude_graph(
+            g, dist_fn, ts=ts, method=method, get_weights=get_weights
+        )
+
+    if compute_at_cardinality is None:
+        compute_here = True
+        min_cardinality = 1
+        compute_at_cardinality = [r for r in range(1,n+1)]
+    elif n in compute_at_cardinality:
+        compute_here = True
+        min_cardinality = min(compute_at_cardinality)
+    else:
+        compute_here = False
+        min_cardinality = min(compute_at_cardinality)
+
+    if compute_here:
+        if get_weights:
+            this_magnitude = np.sum(mag0)
+            magnitudes.append(this_magnitude)
+            weight_list.append(mag0)
+
+        else:
+            this_magnitude = mag0[0]
+            magnitudes.append(this_magnitude)
+            weight_list.append(None)
+        n_nodes.append(n)
+
+    
+    S = np.eye(n)
+
+    for k in compute_at_cardinality:
+        this_graph = g.copy()
+        try:
+            this_graph, C = pool_fn(this_graph, k=k)
+
+            if get_weights:
+                weights, this_ts = compute_magnitude_subgraphs(
+                    this_graph, dist_fn=dist_fn, ts=ts, get_weights=True, method=method, mode=mode
+                )
+                this_magnitude = np.sum(weights)
+                magnitudes.append(this_magnitude)
+            else:
+                weights = None
+                this_magnitude, this_ts = compute_magnitude_subgraphs(
+                    this_graph, dist_fn=dist_fn, ts=ts, get_weights=False, method=method, mode=mode
+                )
+                magnitudes.append(this_magnitude[0])
+            n_nodes.append(this_graph.number_of_nodes())
+            weight_list.append(weights)
+        except:
+            print(f"k={k} did not work!")
+            continue
+
+    return this_graph, S, magnitudes, n_nodes, weight_list

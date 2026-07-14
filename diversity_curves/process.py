@@ -13,11 +13,12 @@ def get_mag_graphs(
     upsample_to=None,
     n_repeats=5,
     compute_at_cardinality=None,
-    mode="full",
+    mode="structure",
     scores_method="random",
     upsample_method="nodes",
     downsample_to=None,
     upsample_mode="node_duplicating",
+    coarsening = "edges"
 ):
     spread_dfs = []
     weights_lists = []
@@ -38,20 +39,35 @@ def get_mag_graphs(
                 n_steps = g.number_of_nodes() - downsample_to
             else:
                 n_steps = g.number_of_nodes()
-            this_graph, S, spread, n_nodes_spread, weight_list = repeat_edge_dropping(
-                g,
-                ts,
-                dist_fn,
-                original_magni=None,
-                n_steps=n_steps,
-                method="spread",
-                scores_method=scores_method,
-                get_weights=True,
-                upsample_to=upsample_to,
-                upsample_mode=upsample_mode,
-                compute_at_cardinality=compute_at_cardinality,
-                upsample_method=upsample_method,
-            )
+            if coarsening == "edges":
+                this_graph, S, spread, n_nodes_spread, weight_list = repeat_edge_dropping(
+                    g,
+                    ts,
+                    dist_fn,
+                    original_magni=None,
+                    n_steps=n_steps,
+                    method="spread",
+                    scores_method=scores_method,
+                    get_weights=True,
+                    upsample_to=upsample_to,
+                    upsample_mode=upsample_mode,
+                    compute_at_cardinality=compute_at_cardinality,
+                    upsample_method=upsample_method,
+                    mode=mode
+                )
+            elif coarsening == "spectral":
+                from diversity_curves.coarsen import coarsened_diversity
+                from diversity_curves.spectral_pool import loukas_pool
+                this_graph, S, spread, n_nodes_spread, weight_list = coarsened_diversity(g,
+                    ts=ts,
+                    dist_fn=dist_fn,
+                    pool_fn=loukas_pool,
+                    original_magni=None,
+                    #n_steps=None,
+                    get_weights=True,
+                    compute_at_cardinality=compute_at_cardinality,
+                    method = "spread",
+                    mode=mode)
             this_col_2 = pd.Series(spread)
             this_col_2.index = pd.Series(n_nodes_spread)
             this_col_2 = pd.DataFrame(this_col_2)
