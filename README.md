@@ -47,3 +47,8 @@ Then, the notebook in `./single_cell/single_cell.ipynb` can be used to reproduce
 ### Diversity curves characterise molecular graph datasets
 
 The notebook in `./enzymes/two_sample_test_enzymes.ipynb` can be used to reproduce the main results used in the paper from the precomputed graph embeddings saved in `./enzymes/results`. To recompute the graph embeddings, one can run `./enzymes/embeddings.sh`.
+Then, the notebook in `./single_cell/single_cell.ipynb` can be used to reproduce the main results used in the paper from the precomputed graph embeddings saved in `./single_cell/results`. To recompute the graph embeddings, one can run `./single_cell/run_baselines.sh`.
+
+### Diversity curves are expressive graph representations
+
+To reproduce the results on expressivity on the BREC dataset reported in Table S.9, run  `./single_cell/brec_emb_test.py` to test the expressivity of graph embedding methods, and `./single_cell/brec_diversity_curves.ipynb` to evaluate the expressivity of diversity curves.

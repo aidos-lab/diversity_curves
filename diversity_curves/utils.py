@@ -8,6 +8,7 @@ from sklearn.model_selection import (
     GroupKFold,
 )
 import networkx as nx
+import networkx as nx
 
 #  ╭──────────────────────────────────────────────────────────╮
 #  │ Cross Validation Splits                                  │
@@ -139,3 +140,42 @@ def graph_processing_torch(dataset):
 
         graphs.append(G)
     return graphs
+
+
+def graph_processing_torch(dataset):
+    """
+    Convert a PyTorch Geometric dataset into a list of NetworkX graphs.
+
+    Parameters
+    ----------
+    dataset : torch_geometric.data.Dataset
+        A PyG dataset where each element is a graph with edge_index and num_nodes.
+
+    Returns
+    -------
+    list[nx.Graph]
+        List of NetworkX Graph objects.
+    """
+    graphs = []
+    for data in dataset:
+        # Create a NetworkX graph for each PyG graph
+        G = nx.Graph()
+        edge_index = data.edge_index.numpy()
+        edges = [(int(u), int(v)) for u, v in zip(edge_index[0], edge_index[1])]
+        G.add_edges_from(edges)
+
+        # Add isolated nodes if any
+        G.add_nodes_from(range(data.num_nodes))
+
+        graphs.append(G)
+    return graphs
+
+
+def pyg_dataset_to_networkx(gm_train):
+    labels = []
+    nx_graphs = []
+    for data in gm_train:
+        edges_list = data.edge_index.numpy().T.tolist()
+        G = nx.Graph(edges_list)
+        nx_graphs.append(G)
+    return labels, nx_graphs
