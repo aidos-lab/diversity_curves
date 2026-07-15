@@ -150,7 +150,7 @@ if __name__ == '__main__':
                 def dist_fn(G):
                     return get_dist(G=G, X=None, X2=None, metric=metric, mode="structure")
                 
-                all_spreads, weights_lists = get_mag_graphs([g.copy() for g in G_nx], dist_fn, ts=[1], upsample_to=upsample_to, downsample_to=downsample_to, n_repeats=n_reps, scores_method='random', compute_at_cardinality=compute_at_cardinality)
+                all_spreads, weights_lists = get_mag_graphs([g.copy() for g in G_nx], dist_fn, ts=[1], upsample_to=upsample_to, downsample_to=downsample_to, n_repeats=n_reps, scores_method='random', compute_at_cardinality=compute_at_cardinality, set_seed=False)
 
                 mag_funs = get_funs_df(all_spreads)
                 mag_funs_interpolated = mag_funs.interpolate(method='linear', axis='columns')
