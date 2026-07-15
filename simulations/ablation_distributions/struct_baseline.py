@@ -209,6 +209,7 @@ if __name__ == '__main__':
         'nedges': lambda G: G.number_of_edges(),
         'density': lambda G: nx.density(G),
         'nconn_components': lambda G: nx.number_connected_components(G),
+        'avg_clustering': lambda G: nx.average_clustering(G),
     }
 
     # for collecting a summary statistic vector
