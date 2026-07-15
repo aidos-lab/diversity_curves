@@ -2,6 +2,7 @@ import networkx as nx
 import random
 import numpy as np
 
+
 def est_moment(graph, number_of_walks, number_of_steps):
     node_list = list(nx.nodes(graph))
     moments = np.zeros(number_of_steps)
@@ -14,7 +15,7 @@ def est_moment(graph, number_of_walks, number_of_steps):
                 # W is an isolated nodes
                 break
             w = random.choice(nbr_list)
-            if w==node:
+            if w == node:
                 moments[step] = moments[step] + 1
-    moments = moments/number_of_walks; 
+    moments = moments / number_of_walks
     return moments

@@ -1,15 +1,34 @@
 import numpy as np
-from sklearn.model_selection import train_test_split, GroupShuffleSplit, StratifiedKFold, KFold, StratifiedGroupKFold, GroupKFold
+from sklearn.model_selection import (
+    train_test_split,
+    GroupShuffleSplit,
+    StratifiedKFold,
+    KFold,
+    StratifiedGroupKFold,
+    GroupKFold,
+)
+import networkx as nx
+import networkx as nx
 
 #  ╭──────────────────────────────────────────────────────────╮
 #  │ Cross Validation Splits                                  │
 #  ╰──────────────────────────────────────────────────────────╯
-        
-def make_splits(all_idxs, targets, outer_k=10, inner_k=None, holdout_test_size=0.1, seed=42, stratify=True, groups=None):
-    
+
+
+def make_splits(
+    all_idxs,
+    targets,
+    outer_k=10,
+    inner_k=None,
+    holdout_test_size=0.1,
+    seed=42,
+    stratify=True,
+    groups=None,
+):
+
     if groups is None:
         if stratify:
-            outer_kfold =  StratifiedKFold(n_splits=outer_k, shuffle=True)
+            outer_kfold = StratifiedKFold(n_splits=outer_k, shuffle=True)
         else:
             outer_kfold = KFold(n_splits=outer_k, shuffle=True)
     else:
@@ -22,45 +41,60 @@ def make_splits(all_idxs, targets, outer_k=10, inner_k=None, holdout_test_size=0
     # Set the random seed for reproducibility
     np.random.seed(seed)
 
-    for train_ok_split, test_ok_split in outer_kfold.split(X=all_idxs, y=targets, groups=groups):
-        split = {"test": all_idxs[test_ok_split], 'model_selection': []}
+    for train_ok_split, test_ok_split in outer_kfold.split(
+        X=all_idxs, y=targets, groups=groups
+    ):
+        split = {"test": all_idxs[test_ok_split], "model_selection": []}
 
         train_ok_targets = targets[train_ok_split]
 
         if groups is not None:
             train_ok_groups = groups[train_ok_split]
 
-        if inner_k is None:  
+        if inner_k is None:
             assert holdout_test_size is not None
             if groups is None:
-                train_i_split, val_i_split = train_test_split(train_ok_split,
-                                                                stratify=train_ok_targets,
-                                                                test_size=holdout_test_size)
+                train_i_split, val_i_split = train_test_split(
+                    train_ok_split,
+                    stratify=train_ok_targets,
+                    test_size=holdout_test_size,
+                )
             else:
                 inner_split = GroupShuffleSplit(n_splits=1, test_size=holdout_test_size)
-                split_gen = inner_split.split(train_ok_split, train_ok_targets, groups=train_ok_groups)
+                split_gen = inner_split.split(
+                    train_ok_split, train_ok_targets, groups=train_ok_groups
+                )
                 train_i_split, val_i_split = next(split_gen)
-            split['model_selection'].append(
-                {"train": train_i_split, "validation": val_i_split})
+            split["model_selection"].append(
+                {"train": train_i_split, "validation": val_i_split}
+            )
 
         else:
-            if not groups:  
+            if not groups:
                 if stratify:
-                    inner_kfold = StratifiedKFold(
-                        n_splits=inner_k, shuffle=True)
+                    inner_kfold = StratifiedKFold(n_splits=inner_k, shuffle=True)
                 else:
                     inner_kfold = KFold(n_splits=inner_k, shuffle=True)
             else:
                 if stratify:
-                    inner_kfold = StratifiedGroupKFold(
-                        n_splits=inner_k, shuffle=True)
+                    inner_kfold = StratifiedGroupKFold(n_splits=inner_k, shuffle=True)
                 else:
                     inner_kfold = GroupKFold(n_splits=inner_k, shuffle=True)
-            for train_ik_split, val_ik_split in inner_kfold.split(train_ok_split, train_ok_targets, groups=train_ok_groups):
-                split['model_selection'].append(
-                    {"train": train_ok_split[train_ik_split], "validation": train_ok_split[val_ik_split]})
-                
-        idx_tr, idx_va, idx_te = split['model_selection'][0]['train'], split['model_selection'][0]['validation'], split['test']
+            for train_ik_split, val_ik_split in inner_kfold.split(
+                train_ok_split, train_ok_targets, groups=train_ok_groups
+            ):
+                split["model_selection"].append(
+                    {
+                        "train": train_ok_split[train_ik_split],
+                        "validation": train_ok_split[val_ik_split],
+                    }
+                )
+
+        idx_tr, idx_va, idx_te = (
+            split["model_selection"][0]["train"],
+            split["model_selection"][0]["validation"],
+            split["test"],
+        )
         indices.append([idx_tr, idx_va, idx_te])
     return indices
 
@@ -71,9 +105,77 @@ def make_inner_split(all_idxs, targets, inner_k=10, holdout_test_size=0.1, seed=
     # Set the random seed for reproducibility
     np.random.seed(seed)
 
-    train_i_split, val_i_split = train_test_split(all_idxs,
-                                                        stratify=targets,
-                                                        test_size=holdout_test_size)
+    train_i_split, val_i_split = train_test_split(
+        all_idxs, stratify=targets, test_size=holdout_test_size
+    )
     indices.append([train_i_split, val_i_split])
 
     return indices
+
+
+def graph_processing_torch(dataset):
+    """
+    Convert a PyTorch Geometric dataset into a list of NetworkX graphs.
+
+    Parameters
+    ----------
+    dataset : torch_geometric.data.Dataset
+        A PyG dataset where each element is a graph with edge_index and num_nodes.
+
+    Returns
+    -------
+    list[nx.Graph]
+        List of NetworkX Graph objects.
+    """
+    graphs = []
+    for data in dataset:
+        # Create a NetworkX graph for each PyG graph
+        G = nx.Graph()
+        edge_index = data.edge_index.numpy()
+        edges = [(int(u), int(v)) for u, v in zip(edge_index[0], edge_index[1])]
+        G.add_edges_from(edges)
+
+        # Add isolated nodes if any
+        G.add_nodes_from(range(data.num_nodes))
+
+        graphs.append(G)
+    return graphs
+
+
+def graph_processing_torch(dataset):
+    """
+    Convert a PyTorch Geometric dataset into a list of NetworkX graphs.
+
+    Parameters
+    ----------
+    dataset : torch_geometric.data.Dataset
+        A PyG dataset where each element is a graph with edge_index and num_nodes.
+
+    Returns
+    -------
+    list[nx.Graph]
+        List of NetworkX Graph objects.
+    """
+    graphs = []
+    for data in dataset:
+        # Create a NetworkX graph for each PyG graph
+        G = nx.Graph()
+        edge_index = data.edge_index.numpy()
+        edges = [(int(u), int(v)) for u, v in zip(edge_index[0], edge_index[1])]
+        G.add_edges_from(edges)
+
+        # Add isolated nodes if any
+        G.add_nodes_from(range(data.num_nodes))
+
+        graphs.append(G)
+    return graphs
+
+
+def pyg_dataset_to_networkx(gm_train):
+    labels = []
+    nx_graphs = []
+    for data in gm_train:
+        edges_list = data.edge_index.numpy().T.tolist()
+        G = nx.Graph(edges_list)
+        nx_graphs.append(G)
+    return labels, nx_graphs

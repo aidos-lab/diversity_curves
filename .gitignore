@@ -43,3 +43,6 @@ venv.bak/
 # Other
 uv.lock
 simulations/results/*
+data/sc/
+single_cell/results/G_nx.pkl
+data/TUDataset/
