@@ -83,6 +83,11 @@ if __name__ == '__main__':
     all_results = {}
     avg_differences = {}
     std_differences = {}
+    all_differences = {}
+    avg_rand_differences = {}
+    std_rand_differences = {}
+    all_rand_differences = {}
+    avg_accs_seeds = {}
 
     for model in models:
         model_results = {}
@@ -128,9 +133,9 @@ if __name__ == '__main__':
     
         for metric in graph_metrics:
 
-            acc_per_seed = {}
-            acc_per_seed[f'divcurves_{metric}'] = []
-            acc_per_seed[f'divcurves_pca_{metric}'] = []
+            avg_accs_seeds[model] = {}
+            avg_accs_seeds[model][f'divcurves_{metric}'] = []
+            avg_accs_seeds[model][f'divcurves_pca_{metric}'] = []
 
             mag_funs_per_seed = []
 
@@ -150,7 +155,7 @@ if __name__ == '__main__':
                 def dist_fn(G):
                     return get_dist(G=G, X=None, X2=None, metric=metric, mode="structure")
                 
-                all_spreads, weights_lists = get_mag_graphs([g.copy() for g in G_nx], dist_fn, ts=[1], upsample_to=upsample_to, downsample_to=downsample_to, n_repeats=n_reps, scores_method='random', compute_at_cardinality=compute_at_cardinality, set_seed=False)
+                all_spreads, weights_lists = get_mag_graphs([g.copy() for g in G_nx], dist_fn, ts=[1], upsample_to=upsample_to, downsample_to=downsample_to, n_repeats=n_reps, scores_method='random', compute_at_cardinality=compute_at_cardinality, set_seed=False, mode = 'structure')
 
                 mag_funs = get_funs_df(all_spreads)
                 mag_funs_interpolated = mag_funs.interpolate(method='linear', axis='columns')
@@ -176,7 +181,7 @@ if __name__ == '__main__':
                 else:
                     test_accs = knn_classifier(np.array(mag_funs_interpolated), np.array(y), precomputed=False)
                 
-                acc_per_seed["divcurves_"+metric].append(test_accs)
+                avg_accs_seeds[model]["divcurves_"+metric].append(np.mean(test_accs))
                 model_results["divcurves_"+metric]['acc_mean'].append(np.mean(test_accs))
                 model_results["divcurves_"+metric]['acc_std'].append(np.std(test_accs))
 
@@ -191,7 +196,7 @@ if __name__ == '__main__':
                 else:
                     test_accs = knn_classifier(X_pca, np.array(y), precomputed=False)
                 
-                acc_per_seed[f'divcurves_pca_{metric}'].append(test_accs)
+                avg_accs_seeds[model][f'divcurves_pca_{metric}'].append(np.mean(test_accs))
                 model_results[f'divcurves_pca_{metric}']['acc_mean'].append(np.mean(test_accs))
                 model_results[f'divcurves_pca_{metric}']['acc_std'].append(np.std(test_accs))
 
@@ -210,20 +215,44 @@ if __name__ == '__main__':
                 # plt.savefig(results_dir + f"{model}/divcurves_pca_{metric}.png", dpi=300, format='png', bbox_inches="tight")
                 # plt.close()
 
+            # compute mean curve over all repeats
+            df_mag_funs_all_seeds = pd.concat([mag_funs_per_seed[i] for i in range(n_seeds)])
+            df_mean_curve = df_mag_funs_all_seeds.groupby(df_mag_funs_all_seeds.index).mean()
 
         
-        # mean and std (over all graphs) for l2 distance in difference seeds
-        avg_differences[model] = []
-        std_differences[model] = []
-        for seed_i in range(n_seeds):
-            for seed_j in range(seed_i+1, n_seeds):
+            # mean and std (over all graphs) for l2 distance in difference seeds
+            avg_differences[model] = []
+            std_differences[model] = []
+            all_differences[model] = []
+            for seed_i in range(n_seeds):
                 # getting a difference between the curves from random seed
                 l2_differences = []
-                for graph_index in mag_funs_per_seed[0].index:
-                    divcurvei, divcurvej = mag_funs_per_seed[seed_i].loc[graph_index], mag_funs_per_seed[seed_j].loc[graph_index]
-                    l2_differences.append((np.linalg.norm([divcurvei - divcurvej], ord=None)))
+                for graph_index in df_mean_curve.index:
+                    this_curve, mean_curve = mag_funs_per_seed[seed_i].loc[graph_index], df_mean_curve.loc[graph_index]
+                    l2norm = np.linalg.norm([this_curve - mean_curve], ord=None)
+                    l2_differences.append(l2norm)
+                    all_differences[model].append(l2norm)
                 avg_differences[model].append(np.mean(l2_differences))
                 std_differences[model].append(np.std(l2_differences))
+
+            #as a control we plot the mean distances between some randomly picked graphs
+
+            # mean and std (over all graphs) for l2 distance in difference seeds to the mean curve
+            avg_rand_differences[model] = []
+            std_rand_differences[model] = []
+            all_rand_differences[model] = []
+            for seed_i in range(n_seeds):
+                # getting a difference between the curves from random seed
+                l2_differences = []
+                
+                for graph_index in df_mean_curve.index:
+                    other_graph = np.random.choice(np.delete(list(df_mean_curve.index),graph_index))
+                    this_curve, other_curve = mag_funs_per_seed[seed_i].loc[graph_index], df_mean_curve.loc[other_graph]
+                    l2norm = np.linalg.norm([this_curve - other_curve], ord=None)
+                    l2_differences.append(l2norm)
+                    all_rand_differences[model].append(l2norm)
+                avg_rand_differences[model].append(np.mean(l2_differences))
+                std_rand_differences[model].append(np.std(l2_differences))
 
 
         # storing results of model
@@ -233,9 +262,18 @@ if __name__ == '__main__':
 
     # combine results of all models
     res_combined = pd.concat([all_results[key] for key in all_results.keys()], axis=1, keys=all_results.keys())
+    
+    # think about if we rather just want to save all diversity curves of all models and per all seeds?
     all_avg_differences = pd.DataFrame.from_dict(avg_differences, orient='index')
     all_std_differences = pd.DataFrame.from_dict(std_differences, orient='index')
- 
+    all_all_differences = pd.DataFrame.from_dict(all_differences, orient='index')
+    all_avg_rand_differences = pd.DataFrame.from_dict(avg_rand_differences, orient='index')
+    all_std_rand_differences = pd.DataFrame.from_dict(std_rand_differences, orient='index')
+    all_all_rand_differences = pd.DataFrame.from_dict(all_rand_differences, orient='index')
+    avg_accuracies_tuples = {(i,j): avg_accs_seeds[i][j] 
+       for i in avg_accs_seeds.keys() 
+       for j in avg_accs_seeds[i].keys()}
+    avg_accs_seed_df = pd.DataFrame(list(avg_accuracies_tuples.values()), index=pd.MultiIndex.from_tuples(avg_accuracies_tuples.keys()))
     # save results
     df_n_nodes = pd.DataFrame({"n_nodes": n_nodes})
     df_n_nodes.to_csv(f"{results_dir}/n_nodes.csv")
@@ -247,6 +285,10 @@ if __name__ == '__main__':
 
     all_avg_differences.to_csv(f'{results_dir}/avg_curve_diffs.csv')
     all_std_differences.to_csv(f'{results_dir}/std_curve_diffs.csv')
-
+    all_all_differences.to_csv(f'{results_dir}/all_diffs.csv')
+    all_avg_rand_differences.to_csv(f'{results_dir}/avg_rand_diffs.csv')
+    all_std_rand_differences.to_csv(f'{results_dir}/std_rand_diffs.csv')
+    all_all_rand_differences.to_csv(f'{results_dir}/all_rand_diffs.csv')
+    avg_accs_seed_df.to_csv(f'{results_dir}/avg_accs.csv')
 
 
