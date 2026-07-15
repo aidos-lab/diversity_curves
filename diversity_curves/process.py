@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from diversity_curves.diversity import compute_magnitude_graph
 
-def get_mag_graphs(graphs, dist_fn, ts, upsample_to=None, n_repeats=5, compute_at_cardinality=None, mode="full", scores_method="random", upsample_method="nodes", downsample_to=None, upsample_mode = 'node_duplicating'):
+def get_mag_graphs(graphs, dist_fn, ts, upsample_to=None, n_repeats=5, compute_at_cardinality=None, mode="full", scores_method="random", upsample_method="nodes", downsample_to=None, upsample_mode = 'node_duplicating', set_seed=True):
     spread_dfs = []
     weights_lists = []
 
@@ -20,7 +20,8 @@ def get_mag_graphs(graphs, dist_fn, ts, upsample_to=None, n_repeats=5, compute_a
                     g.nodes[n]["feature"] = np.array([1.0])
      
         for seed in range(n_repeats):
-            # np.random.seed(seed)
+            if set_seed:
+                np.random.seed(seed)
             if downsample_to:
                 n_steps = g.number_of_nodes() - downsample_to
             else:
