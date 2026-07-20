@@ -516,8 +516,10 @@ def coarsened_diversity(
     g,
     ts,
     dist_fn,
-    pool_fn,
+    pool_fn = None,
+    upsample_fn = None,
     original_magni=None,
+    upsample_to=None,
     #n_steps=None,
     get_weights=False,
     compute_at_cardinality=None,
@@ -576,7 +578,10 @@ def coarsened_diversity(
     for k in compute_at_cardinality:
         this_graph = g.copy()
         try:
-            this_graph, C = pool_fn(this_graph, k=k)
+            if k > n:
+                this_graph, = upsample_fn(this_graph, k=k) # C
+            else:
+                this_graph = pool_fn(this_graph, k=k) #, C
 
             if get_weights:
                 weights, this_ts = compute_magnitude_subgraphs(

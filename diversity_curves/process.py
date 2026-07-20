@@ -69,6 +69,33 @@ def get_mag_graphs(
                     compute_at_cardinality=compute_at_cardinality,
                     method = "spread",
                     mode=mode)
+            elif coarsening == "sbm":
+                from diversity_curves.coarsen import coarsened_diversity
+                from diversity_curves.spectral_pool import sbm_coarsen, sbm_expand
+                    
+                def sbm_coarsen_seed(G, k):
+                    #if set_seed:
+                    return sbm_coarsen(G, k, random_state=seed)
+                    #else:
+                    #    return sbm_coarsen(G, k, random_state=seed)
+
+                def sbm_expand_seed(G, k):
+                    #if set_seed:
+                    return sbm_expand(G, k, random_state=seed)
+
+                this_graph, S, spread, n_nodes_spread, weight_list = coarsened_diversity(g,
+                    ts=ts,
+                    dist_fn=dist_fn,
+                    pool_fn=sbm_coarsen_seed,
+                    upsample_fn = sbm_expand_seed,
+                    original_magni=None,
+                    upsample_to=upsample_to,
+                    #n_steps=None,
+                    get_weights=True,
+                    compute_at_cardinality=compute_at_cardinality,
+                    method = "spread",
+                    mode=mode)
+            
             this_col_2 = pd.Series(spread)
             this_col_2.index = pd.Series(n_nodes_spread)
             this_col_2 = pd.DataFrame(this_col_2)
