@@ -126,7 +126,8 @@ if __name__ == '__main__':
         def dist_fn(G):
             return get_dist(G=G, X=None, X2=None, metric=metric, mode="structure")
         
-        all_spreads, weights_lists = get_mag_graphs(G_nx, dist_fn, ts=[1], upsample_to=upsample_to, downsample_to=downsample_to, n_repeats=3)
+        all_spreads, weights_lists = get_mag_graphs(G_nx, dist_fn, ts=[1], upsample_to=upsample_to, downsample_to=downsample_to, n_repeats=3, scores_method='random', mode='structure', set_seed=False)
+    
         
         mag_funs = get_funs_df(all_spreads)
         mag_funs_interpolated = mag_funs.interpolate(method='linear', axis='columns')
@@ -207,9 +208,12 @@ if __name__ == '__main__':
     struct_baselines = {
         'nnodes': lambda G: G.number_of_nodes(),
         'nedges': lambda G: G.number_of_edges(),
-        'density': lambda G: nx.density(G),
+        # 'density': lambda G: nx.density(G),
         'nconn_components': lambda G: nx.number_connected_components(G),
         'avg_clustering': lambda G: nx.average_clustering(G),
+        'avg_shortest_path': lambda G: np.mean([nx.average_shortest_path_length(G.subgraph(c).copy()) for c in nx.connected_components(G)]),
+        'max_diameter': lambda G: np.max([nx.diameter(G.subgraph(c).copy()) for c in nx.connected_components(G)]),
+        'deg_statistic': lambda G: sorted(list(dict(G.degree()).values())),
     }
 
     # for collecting a summary statistic vector
@@ -217,8 +221,15 @@ if __name__ == '__main__':
 
     # one at a time
     for n_baseline in struct_baselines:
-        array = np.reshape(np.array([struct_baselines[n_baseline](G_nx[i]) for i in range(len(G_nx))]), (-1,1))
-
+        if n_baseline != 'deg_statistic':
+            array = np.array([struct_baselines[n_baseline](G_nx[i]) for i in range(len(G_nx))])
+            array = array.reshape(-1,1)
+        else:
+            array = []
+            for G in G_nx:
+                padded_feature = np.pad(struct_baselines[n_baseline](G), (0, 30-len(struct_baselines[n_baseline](G))), constant_values=(0,0))
+                array.append(padded_feature)
+            array = np.array(array)
         res_dict[f'structure_baseline_{n_baseline}'] = {}
         res_dict[f'structure_baseline_{n_baseline}'] = {}
         res_dict[f'structure_baseline_{n_baseline}'] = {}
