@@ -71,7 +71,12 @@ if __name__ == "__main__":
         default=10,
         help='specify the number of different seeds for the ablation study',
     )
-
+    argparser.add_argument(
+        '--comparison_method',
+        type = str,
+        default='all_but_self',
+        help='Choose to the diversity curves of which graphs we can compare when computing the control. Either `all_but_self`: chooses random graph that is differnt from itself; `different_group`: choose a random graph from different distribution.'
+    )
     args = argparser.parse_args()
     results_dir = args.output_dir
     n_low = args.nrange[0]
@@ -80,6 +85,7 @@ if __name__ == "__main__":
     n_graphs = args.ngraphs
     n_rep = args.nreps
     n_seeds = args.nseed
+    comp_method = args.comparison_method
 
     # Setting the parameters as reported in the paper
     model_params = {
@@ -321,7 +327,14 @@ if __name__ == "__main__":
             l2_differences = []
             
             for graph_index in df_mean_curve.index:
-                other_graph = np.random.choice(np.delete(list(df_mean_curve.index),graph_index))
+                if comp_method == 'all_but_self':
+                    other_graph = np.random.choice(np.delete(list(df_mean_curve.index),graph_index))
+                elif comp_method == 'different_group':
+                    this_label = y[graph_index]
+                    other_indices_options = [i for i in df_mean_curve.index if y[i] != this_label]
+                    other_graph = np.random.choice(other_indices_options)
+                else:
+                    print('Choose comparison method from `all_but_self` or `different_group`')
                 this_curve, other_curve = mag_funs_per_seed[seed_i].loc[graph_index], df_mean_curve.loc[other_graph]
                 l2norm = np.linalg.norm([this_curve - other_curve], ord=None)
                 l2_differences.append(l2norm)
