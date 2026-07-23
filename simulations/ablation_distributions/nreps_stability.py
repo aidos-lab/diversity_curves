@@ -67,6 +67,13 @@ if __name__ == "__main__":
         help='Specify the number of repetitions in the diversity curves computation'
     )
 
+    argparser.add_argument(
+        '--nseeds',
+        type=int,
+        default=10,
+        help='Specify the number of seeds over which we repeat the experiment'
+    )
+
     args = argparser.parse_args()
     results_dir = args.output_dir
     n_low = args.nrange[0]
@@ -74,6 +81,7 @@ if __name__ == "__main__":
     n_steps = args.nsteps
     n_graphs = args.ngraphs
     n_reps = args.nreps
+    n_seeds = args.nseeds
 
     # Setting the parameters as reported in the paper
     model_params = {
@@ -161,114 +169,140 @@ if __name__ == "__main__":
     ##################################
     ### computing diversity curves ###
     ##################################
-
     for metric in graph_metrics:
 
-        for n_rep in n_reps:
-        
-            res_dict[f"divcurves_{metric}_nreps_{n_rep}"] = {}
-            res_dict[f"divcurves_pca_{metric}_nreps_{n_rep}"] = {}
-            
-            print(f"Computing MAG with metric: {metric} and nrep: {n_rep}")
+            for i_seed in range(n_seeds):
 
-            def dist_fn(G):
-                return get_dist(G=G, X=None, X2=None, metric=metric, mode="structure")
+                res_dict[(f"divcurves_{metric}", i_seed)] = {}
+                res_dict[(f"divcurves_pca_{metric}", i_seed)] = {}
 
-            all_spreads, weights_lists = get_mag_graphs(
-                G_nx,
-                dist_fn,
-                ts=[1],
-                upsample_to=upsample_to,
-                downsample_to=downsample_to,
-                n_repeats=n_rep,
-                scores_method='random',
-                mode='structure',
-                set_seed=False
-            )
+                for n_rep in n_reps:
+                    
+                    print(f"Computing MAG with metric: {metric} and nrep: {n_rep} seed: {i_seed}")
 
-            mag_funs = get_funs_df(all_spreads)
-            mag_funs_interpolated = mag_funs.interpolate(method="linear", axis="columns")
+                    def dist_fn(G):
+                        return get_dist(G=G, X=None, X2=None, metric=metric, mode="structure")
+
+                    all_spreads, weights_lists = get_mag_graphs(
+                        G_nx,
+                        dist_fn,
+                        ts=[1],
+                        upsample_to=upsample_to,
+                        downsample_to=downsample_to,
+                        n_repeats=n_rep,
+                        scores_method='random',
+                        mode='structure',
+                        set_seed=False
+                    )
+
+                    mag_funs = get_funs_df(all_spreads)
+                    mag_funs_interpolated = mag_funs.interpolate(method="linear", axis="columns")
 
 
 
-            # compute clustering metrics based on euclidean distance of diversity curve vectors
-            ari_kmeans_mean, ari_kmeans_std = compute_rand_kmeans(
-                np.array(mag_funs_interpolated), y
-            )
-            ari_agglo_mean, ari_agglo_std = compute_rand_agglo(
-                np.array(mag_funs_interpolated), y, metric="euclidean"
-            )
+                    # compute clustering metrics based on euclidean distance of diversity curve vectors
+                    ari_kmeans_mean, ari_kmeans_std = compute_rand_kmeans(
+                        np.array(mag_funs_interpolated), y
+                    )
+                    ari_agglo_mean, ari_agglo_std = compute_rand_agglo(
+                        np.array(mag_funs_interpolated), y, metric="euclidean"
+                    )
 
-            means, stds = compute_clustering_scores_resample(
-                np.array(mag_funs_interpolated), y
-            )
+                    means, stds = compute_clustering_scores_resample(
+                        np.array(mag_funs_interpolated), y
+                    )
 
-            (
-                res_dict[f"divcurves_{metric}_nreps_{n_rep}"]["silh_mean"],
-                res_dict[f"divcurves_{metric}_nreps_{n_rep}"]["db_mean"],
-                res_dict[f"divcurves_{metric}_nreps_{n_rep}"]["ch_mean"],
-            ) = means
-            (
-                res_dict[f"divcurves_{metric}_nreps_{n_rep}"]["silh_std"],
-                res_dict[f"divcurves_{metric}_nreps_{n_rep}"]["db_std"],
-                res_dict[f"divcurves_{metric}_nreps_{n_rep}"]["ch_std"],
-            ) = stds
-            res_dict[f"divcurves_{metric}_nreps_{n_rep}"]["ari_agglo_mean"] = ari_agglo_mean
-            res_dict[f"divcurves_{metric}_nreps_{n_rep}"]["ari_agglo_std"] = ari_agglo_std
-            res_dict[f"divcurves_{metric}_nreps_{n_rep}"]["ari_kmeans_mean"] = ari_kmeans_mean
-            res_dict[f"divcurves_{metric}_nreps_{n_rep}"]["ari_kmeans_std"] = ari_kmeans_std
+                    (
+                        res_dict[(f"divcurves_{metric}", i_seed)][("silh_mean", n_rep)],
+                        res_dict[(f"divcurves_{metric}", i_seed)][("db_mean", n_rep, )],
+                        res_dict[(f"divcurves_{metric}", i_seed)][("ch_mean", n_rep)],
+                    ) = means
+                    (
+                        res_dict[(f"divcurves_{metric}", i_seed)][("silh_std", n_rep)],
+                        res_dict[(f"divcurves_{metric}", i_seed)][("db_std", n_rep)],
+                        res_dict[(f"divcurves_{metric}", i_seed)][("ch_std", n_rep)],
+                    ) = stds
+                    res_dict[(f"divcurves_{metric}", i_seed)][("ari_agglo_mean", n_rep)] = ari_agglo_mean
+                    res_dict[(f"divcurves_{metric}", i_seed)][("ari_agglo_std", n_rep)] = ari_agglo_std
+                    res_dict[(f"divcurves_{metric}", i_seed)][("ari_kmeans_mean", n_rep)] = ari_kmeans_mean
+                    res_dict[(f"divcurves_{metric}", i_seed)][("ari_kmeans_std", n_rep)] = ari_kmeans_std
 
-            # computing accuracies
-            if n_graphs > 1:
-                test_accs = knn_classifier(
-                    np.array(mag_funs_interpolated),
-                    np.array(y),
-                    precomputed=False,
-                    groups=np.array(n_nodes),
-                )
-            else:
-                test_accs = knn_classifier(
-                    np.array(mag_funs_interpolated), np.array(y), precomputed=False
-                )
+                    # computing accuracies
+                    if n_graphs > 1:
+                        test_accs = knn_classifier(
+                            np.array(mag_funs_interpolated),
+                            np.array(y),
+                            precomputed=False,
+                            groups=np.array(n_nodes),
+                        )
+                    else:
+                        test_accs = knn_classifier(
+                            np.array(mag_funs_interpolated), np.array(y), precomputed=False
+                        )
 
-            res_dict[f"divcurves_{metric}_nreps_{n_rep}"]["acc_mean"] = np.mean(test_accs)
-            res_dict[f"divcurves_{metric}_nreps_{n_rep}"]["acc_std"] = np.std(test_accs)
+                    res_dict[(f"divcurves_{metric}", i_seed)][("acc_mean", n_rep)] = np.mean(test_accs)
+                    res_dict[(f"divcurves_{metric}", i_seed)][("acc_std", n_rep)] = np.std(test_accs)
 
-            # doing PCA with Euclidean distance between the diversity curves
-            pca_embedding = PCA(n_components=2)
-            X_pca = pca_embedding.fit_transform(np.array(mag_funs_interpolated))
+                    # doing PCA with Euclidean distance between the diversity curves
+                    pca_embedding = PCA(n_components=2)
+                    X_pca = pca_embedding.fit_transform(np.array(mag_funs_interpolated))
 
-            # computing clustering scores and accuracies on transformed data from PCA
-            if n_graphs > 1:
-                test_accs = knn_classifier(
-                    X_pca, np.array(y), precomputed=False, groups=np.array(n_nodes)
-                )
-            else:
-                test_accs = knn_classifier(X_pca, np.array(y), precomputed=False)
+                    # computing clustering scores and accuracies on transformed data from PCA
+                    if n_graphs > 1:
+                        test_accs = knn_classifier(
+                            X_pca, np.array(y), precomputed=False, groups=np.array(n_nodes)
+                        )
+                    else:
+                        test_accs = knn_classifier(X_pca, np.array(y), precomputed=False)
 
-            res_dict[f"divcurves_pca_{metric}_nreps_{n_rep}"]["acc_mean"] = np.mean(test_accs)
-            res_dict[f"divcurves_pca_{metric}_nreps_{n_rep}"]["acc_std"] = np.std(test_accs)
-            all_clustering_results_euclidean(f"divcurves_pca_{metric}_nreps_{n_rep}", res_dict, X_pca, y)
+                    res_dict[(f"divcurves_pca_{metric}", i_seed)][("acc_mean", n_rep)] = np.mean(test_accs)
+                    res_dict[(f"divcurves_pca_{metric}", i_seed)][("acc_std", n_rep)] = np.std(test_accs)
+                    # all_clustering_results_euclidean(f"divcurves_pca_{metric}_nreps_{n_rep}", res_dict, X_pca, y)
+                    ari_kmeans_mean, ari_kmeans_std = compute_rand_kmeans(
+                        X_pca, y
+                    )
+                    ari_agglo_mean, ari_agglo_std = compute_rand_agglo(
+                        X_pca, y, metric="euclidean"
+                    )
 
-            # creating plots
-            fig = sns.scatterplot(
-                x=X_pca[:, 0], y=X_pca[:, 1], hue=hue_names, palette="tab10"
-            )
-            fig.legend(frameon=False, loc=(1.04, 0), bbox_to_anchor=(1, 0.5))
-            sns.despine()
-            plt.savefig(
-                results_dir + f"divcurves_pca_{metric}_nreps_{n_rep}.pdf",
-                dpi=300,
-                format="pdf",
-                bbox_inches="tight",
-            )
-            plt.savefig(
-                results_dir + f"divcurves_pca_{metric}_nreps_{n_rep}.png",
-                dpi=300,
-                format="png",
-                bbox_inches="tight",
-            )
-            plt.close()
+                    means, stds = compute_clustering_scores_resample(
+                        X_pca, y
+                    )
+
+                    (
+                        res_dict[(f"divcurves_pca_{metric}", i_seed)][("silh_mean", n_rep)],
+                        res_dict[(f"divcurves_pca_{metric}", i_seed)][("db_mean", n_rep, )],
+                        res_dict[(f"divcurves_pca_{metric}", i_seed)][("ch_mean", n_rep)],
+                    ) = means
+                    (
+                        res_dict[(f"divcurves_pca_{metric}", i_seed)][("silh_std", n_rep)],
+                        res_dict[(f"divcurves_pca_{metric}", i_seed)][("db_std", n_rep)],
+                        res_dict[(f"divcurves_pca_{metric}", i_seed)][("ch_std", n_rep)],
+                    ) = stds
+                    res_dict[(f"divcurves_pca_{metric}", i_seed)][("ari_agglo_mean", n_rep)] = ari_agglo_mean
+                    res_dict[(f"divcurves_pca_{metric}", i_seed)][("ari_agglo_std", n_rep)] = ari_agglo_std
+                    res_dict[(f"divcurves_pca_{metric}", i_seed)][("ari_kmeans_mean", n_rep)] = ari_kmeans_mean
+                    res_dict[(f"divcurves_pca_{metric}", i_seed)][("ari_kmeans_std", n_rep)] = ari_kmeans_std
+                    
+                # # creating plots
+                # fig = sns.scatterplot(
+                #     x=X_pca[:, 0], y=X_pca[:, 1], hue=hue_names, palette="tab10"
+                # )
+                # fig.legend(frameon=False, loc=(1.04, 0), bbox_to_anchor=(1, 0.5))
+                # sns.despine()
+                # plt.savefig(
+                #     results_dir + f"divcurves_pca_{metric}_nreps_{n_rep}.pdf",
+                #     dpi=300,
+                #     format="pdf",
+                #     bbox_inches="tight",
+                # )
+                # plt.savefig(
+                #     results_dir + f"divcurves_pca_{metric}_nreps_{n_rep}.png",
+                #     dpi=300,
+                #     format="png",
+                #     bbox_inches="tight",
+                # )
+                # plt.close()
 
         
     # creating dataframes and saving results
