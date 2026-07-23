@@ -142,9 +142,11 @@ if __name__ == "__main__":
     avg_diffs = []
     std_diffs = []
     all_diffs = []
+    all_diffs_meancurve = []
     avg_rand_diffs = []
     std_rand_diffs = []
     all_rand_diffs = []
+    all_rand_diffs_meancurve = []
     accs_seeds = {}
 
     # generate the graphs of all models and create label per model
@@ -315,7 +317,7 @@ if __name__ == "__main__":
                 this_curve, mean_curve = mag_funs_per_seed[seed_i].loc[graph_index], df_mean_curve.loc[graph_index]
                 l2norm = np.linalg.norm([this_curve - mean_curve], ord=None)
                 l2_differences.append(l2norm)
-                all_diffs.append(l2norm)
+                all_diffs_meancurve.append(l2norm)
             avg_diffs.append(np.mean(l2_differences))
             std_diffs.append(np.std(l2_differences))
 
@@ -338,9 +340,35 @@ if __name__ == "__main__":
                 this_curve, other_curve = mag_funs_per_seed[seed_i].loc[graph_index], df_mean_curve.loc[other_graph]
                 l2norm = np.linalg.norm([this_curve - other_curve], ord=None)
                 l2_differences.append(l2norm)
-                all_rand_diffs.append(l2norm)
+                all_rand_diffs_meancurve.append(l2norm)
             avg_rand_diffs.append(np.mean(l2_differences))
             std_rand_diffs.append(np.std(l2_differences))
+
+        #create version of distance distribution without mean curve
+        comp_method = 'different_group'
+
+        for seed_i in range(n_seeds):
+            for seed_j in range(seed_i+1, n_seeds):
+                for graph_index in df_mean_curve.index:
+                    curve_i, curve_j = mag_funs_per_seed[seed_i].loc[graph_index], mag_funs_per_seed[seed_j].loc[graph_index]
+                    l2norm = np.linalg.norm([curve_i - curve_j], ord=None)
+                    all_diffs.append(l2norm)
+
+        #control with random curves
+        for seed_i in range(n_seeds):
+            for seed_j in range(seed_i+1, n_seeds):
+                for graph_index in df_mean_curve.index:
+                    if comp_method == 'all_but_self':
+                        other_graphs = np.delete(list(df_mean_curve.index), graph_index)
+                    elif comp_method == 'different_group':
+                        this_label = y[graph_index]
+                        other_graphs = [i for i in df_mean_curve.index if y[i] != this_label]
+                    else:
+                        print('Choose comparison method from `all_but_self` or `different_group`')
+                    other_graph_index = np.random.choice(other_graphs)
+                    this_curve, other_curve = mag_funs_per_seed[seed_i].loc[graph_index], mag_funs_per_seed[seed_j].loc[other_graph_index]
+                    l2norm = np.linalg.norm([this_curve - other_curve], ord=None)
+                    all_rand_diffs.append(l2norm)
         
     # creating dataframes and saving results
     res_tuples = {(i,j): res_dict[i][j] 
@@ -348,11 +376,18 @@ if __name__ == "__main__":
        for j in res_dict[i].keys()}
     res_df = pd.DataFrame(list(res_tuples.values()), index=pd.MultiIndex.from_tuples(res_tuples.keys()))
 
-    all_diffs_dict = {
-        'same': all_diffs,
-        'rand': all_rand_diffs 
+    all_diffs_mean_dict = {
+        'same': all_diffs_meancurve,
+        'rand': all_rand_diffs_meancurve
     }
 
+    all_diffs_mean_df = pd.DataFrame.from_dict(all_diffs_mean_dict, orient='index')
+
+    all_diffs_dict = {
+            'same': all_diffs,
+            'rand': all_rand_diffs 
+        }
+    
     all_diffs_df = pd.DataFrame.from_dict(all_diffs_dict, orient='index')
 
     seed_diffs_dict = {
@@ -371,6 +406,7 @@ if __name__ == "__main__":
 
     df_n_nodes = pd.DataFrame({"n_nodes": n_nodes})
     res_df.to_csv(f"{results_dir}/res_df.csv")
+    all_diffs_mean_df.to_csv(f'{results_dir}/all_diffs_mean.csv')
     all_diffs_df.to_csv(f'{results_dir}/all_diffs.csv')
     seed_diffs_df.to_csv(f'{results_dir}/seed_diffs.csv')
     accs_seeds_df.to_csv(f'{results_dir}/accs_seed.csv')
