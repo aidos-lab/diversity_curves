@@ -10,10 +10,20 @@ import pandas as pd
 from magnipy.magnitude.distances import get_dist
 from torch_geometric.datasets import TUDataset
 
+from diversity_curves.classifiers import knn_classifier_cv
 from diversity_curves.process import get_funs_df, get_mag_graphs
 from diversity_curves.utils import graph_processing_torch
 
 TIMEOUT_SECONDS = 1200
+
+CLASSIFIER_KWARGS = dict(
+    outer_k=10,
+    holdout_test_size=0.1,
+    stratify=True,
+    tune=True,
+    seed=42,
+    scale=False,
+)
 
 KERNEL_NAMES = [
     "shortest_path",
@@ -26,8 +36,11 @@ KERNEL_NAMES = [
 
 TOPER_FILTS = ["degree", "popularity", "fricci", "oricci", "closeness"]
 
+MAG_DISTANCE_METRICS = ["shortest_path_distance", "diffusion_distance"]
+
 METHODS = (
-    ["mag_shortest_path_distance", "netlsd", "graph2", "feather"]
+    [f"mag_{m}" for m in MAG_DISTANCE_METRICS]
+    + ["netlsd", "graph2", "feather"]
     + [f"kernel_{k}" for k in KERNEL_NAMES]
     + [f"toper_{f}" for f in TOPER_FILTS]
     + ["spectral_zoo"]
@@ -48,9 +61,22 @@ def timeout(seconds):
         signal.signal(signal.SIGALRM, old_handler)
 
 
-def run_mag_shortest_path_distance(van_graph_list, results_path):
-    metric = "shortest_path_distance"
+def run_classification(name, X, y, precomputed, classification_path):
+    test_accs, test_aurocs, test_accs_balanced, conf_matrices = knn_classifier_cv(
+        X=X, y=y, precomputed=precomputed, **CLASSIFIER_KWARGS
+    )
+    pd.DataFrame(
+        {
+            "fold": range(len(test_accs)),
+            "test_accuracy": test_accs,
+            "test_balanced_accuracy": test_accs_balanced,
+            "test_auroc": test_aurocs,
+            "confusion_matrix": [cm.tolist() for cm in conf_matrices],
+        }
+    ).to_csv(f"{classification_path}{name}.csv", index=False)
 
+
+def run_mag(metric, van_graph_list, results_path, y):
     def dist_fn(G):
         return get_dist(G=G, X=None, X2=None, metric=metric, mode="structure")
 
@@ -75,8 +101,18 @@ def run_mag_shortest_path_distance(van_graph_list, results_path):
     mag_funs = mag_funs.loc[:, :upsample_to]
     mag_funs.to_csv(f"{results_path}mag_funs_{metric}.csv")
 
+    y_aligned = y[mag_funs.index]
+    return [
+        {
+            "name": f"mag_funs_{metric}",
+            "X": mag_funs.values,
+            "y": y_aligned,
+            "precomputed": False,
+        }
+    ]
 
-def run_karateclub_embedding(method, G_nx, results_path):
+
+def run_karateclub_embedding(method, G_nx, results_path, y):
     from karateclub import FeatherGraph, Graph2Vec, NetLSD
 
     G_nx_fixed = [
@@ -94,9 +130,10 @@ def run_karateclub_embedding(method, G_nx, results_path):
     array = embedding.get_embedding()
 
     pd.DataFrame(array).to_csv(f"{results_path}{method}.csv", index=False)
+    return [{"name": method, "X": array, "y": y, "precomputed": False}]
 
 
-def run_kernel(kernel_name, G_nx, results_path):
+def run_kernel(kernel_name, G_nx, results_path, y):
     from grakel import GraphKernel, graph_from_networkx
 
     Gs = []
@@ -117,9 +154,12 @@ def run_kernel(kernel_name, G_nx, results_path):
 
     K = gk.fit_transform(Gs)
     pd.DataFrame(K).to_csv(f"{results_path}kernel_{kernel_name}.csv", index=False)
+    #if precomputed:
+    K=-K+K.max()
+    return [{"name": f"kernel_{kernel_name}", "X": K, "y": y, "precomputed": True}]
 
 
-def run_toper(filt, G_nx, results_path):
+def run_toper(filt, G_nx, results_path, y):
     import toper
 
     F = toper.main(G_nx, [filt], num_segm=501)
@@ -130,14 +170,16 @@ def run_toper(filt, G_nx, results_path):
     elif filt == "oricci":
         out_filt = "olricci"
 
+    outputs = []
     for kind in ["super", "sub"]:
         array = np.array(F[f"{out_filt}_{kind}"])
-        pd.DataFrame(array).to_csv(
-            f"{results_path}toper_{out_filt}_{kind}.csv", index=False
-        )
+        name = f"toper_{out_filt}_{kind}"
+        pd.DataFrame(array).to_csv(f"{results_path}{name}.csv", index=False)
+        outputs.append({"name": name, "X": array, "y": y, "precomputed": False})
+    return outputs
 
 
-def run_spectral_zoo(G_nx, results_path):
+def run_spectral_zoo(G_nx, results_path, y):
     from diversity_curves.baselines.spectral_zoo import est_moment
 
     moments = [est_moment(graph, 10000, 4) for graph in G_nx]
@@ -145,19 +187,20 @@ def run_spectral_zoo(G_nx, results_path):
     array = array[:, ~np.all(array == 0, axis=0)]
 
     pd.DataFrame(array).to_csv(f"{results_path}spectral_zoo_moments.csv", index=False)
+    return [{"name": "spectral_zoo_moments", "X": array, "y": y, "precomputed": False}]
 
 
-def run_method(method, van_graph_list, results_path):
-    if method == "mag_shortest_path_distance":
-        run_mag_shortest_path_distance(van_graph_list, results_path)
+def run_method(method, van_graph_list, results_path, y):
+    if method.startswith("mag_"):
+        return run_mag(method[len("mag_") :], van_graph_list, results_path, y)
     elif method in ("netlsd", "graph2", "feather"):
-        run_karateclub_embedding(method, van_graph_list, results_path)
+        return run_karateclub_embedding(method, van_graph_list, results_path, y)
     elif method.startswith("kernel_"):
-        run_kernel(method[len("kernel_") :], van_graph_list, results_path)
+        return run_kernel(method[len("kernel_") :], van_graph_list, results_path, y)
     elif method.startswith("toper_"):
-        run_toper(method[len("toper_") :], van_graph_list, results_path)
+        return run_toper(method[len("toper_") :], van_graph_list, results_path, y)
     elif method == "spectral_zoo":
-        run_spectral_zoo(van_graph_list, results_path)
+        return run_spectral_zoo(van_graph_list, results_path, y)
     else:
         raise ValueError(f"Unknown method: {method}")
 
@@ -189,22 +232,44 @@ if __name__ == "__main__":
     timings_dir = os.path.join(results_dir, "timings")
     os.makedirs(timings_dir, exist_ok=True)
 
+    classification_dir = os.path.join(results_dir, "classification") + os.sep
+    os.makedirs(classification_dir, exist_ok=True)
+
     root = "./../datasets/TUDataset"
     pyg_dataset = TUDataset(root=root, name=dataset_name)
     van_graph_list = graph_processing_torch(pyg_dataset)
+    labels = np.array([data.y.item() for data in pyg_dataset])
 
     start_time = time.time()
     try:
         with timeout(TIMEOUT_SECONDS):
-            run_method(method, van_graph_list, results_dir)
+            outputs = run_method(method, van_graph_list, results_dir, labels)
         elapsed = time.time() - start_time
     except TimeoutError:
         print(f"{method} timed out after {TIMEOUT_SECONDS}s")
         elapsed = TIMEOUT_SECONDS
+        outputs = []
     except Exception as e:
         print(f"{method} failed with error: {e}")
         elapsed = float("nan")
+        outputs = []
 
     pd.DataFrame([{"method": method, "time_seconds": elapsed}]).to_csv(
         os.path.join(timings_dir, f"{method}.csv"), index=False
     )
+
+    for output in outputs:
+        name = output["name"]
+        classification_start = time.time()
+        try:
+            run_classification(
+                name, output["X"], output["y"], output["precomputed"], classification_dir
+            )
+            classification_elapsed = time.time() - classification_start
+        except Exception as e:
+            print(f"classification for {name} failed with error: {e}")
+            classification_elapsed = float("nan")
+
+        pd.DataFrame([{"method": name, "time_seconds": classification_elapsed}]).to_csv(
+            os.path.join(timings_dir, f"{name}_classification.csv"), index=False
+        )
