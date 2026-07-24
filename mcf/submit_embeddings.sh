@@ -2,11 +2,11 @@
 #SBATCH --job-name=embeddings
 #SBATCH --output=logs/embeddings_%A_%a.out
 #SBATCH --error=logs/embeddings_%A_%a.err
-#SBATCH --time=00:25:00
+#SBATCH --time=1:00:00
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
-#SBATCH --array=0-15
-# 16 methods (see METHODS below) -> array indices 0-15.
+#SBATCH --array=0-16
+# 17 methods (see METHODS below) -> array indices 0-16.
 # If you add/remove methods in embeddings.py, update both the array bound
 # above and the METHODS list below to match.
 
@@ -16,6 +16,7 @@ DATASET=${1:-MCF-7}
 
 METHODS=(
     mag_shortest_path_distance
+    mag_diffusion_distance
     netlsd
     graph2
     feather
