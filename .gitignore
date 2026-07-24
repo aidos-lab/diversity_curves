@@ -46,3 +46,4 @@ simulations/results/*
 data/sc/
 single_cell/results/G_nx.pkl
 data/TUDataset/
+datasets/TUDataset/
