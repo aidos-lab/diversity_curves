@@ -84,7 +84,7 @@ def run_mag(metric, van_graph_list, results_path, y):
     upsample_to = min(max(n_nodes), 50)
 
     if max(n_nodes) > 101:
-        compute_at_cardinality = [r for r in range(5, 51, 5)]
+        compute_at_cardinality = [r for r in range(5, 101, 5)]
     else:
         compute_at_cardinality = None
 
@@ -99,6 +99,10 @@ def run_mag(metric, van_graph_list, results_path, y):
     )
     mag_funs = get_funs_df(all_spreads)
     mag_funs = mag_funs.loc[:, :upsample_to]
+
+    num_cols = mag_funs.select_dtypes(include=[np.number]).columns
+    mag_funs = mag_funs[num_cols].interpolate(method="linear", axis=0, limit_direction="both")
+
     mag_funs.to_csv(f"{results_path}mag_funs_{metric}.csv")
 
     y_aligned = y[mag_funs.index]
