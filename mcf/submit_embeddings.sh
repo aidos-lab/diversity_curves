@@ -7,7 +7,7 @@
 #SBATCH --qos=cpu_normal
 #SBATCH --partition=cpu_p
 #SBATCH --mem=64G
-#SBATCH --array=0-16
+#SBATCH --array=0-9
 # 17 methods (see METHODS below) -> array indices 0-16.
 # If you add/remove methods in embeddings.py, update both the array bound
 # above and the METHODS list below to match.
@@ -22,18 +22,18 @@ METHODS=(
     netlsd
     graph2
     feather
-    kernel_shortest_path
-    kernel_pyramid_match
-    kernel_neighborhood_hash
-    kernel_weisfeiler_lehman
-    kernel_core_framework
-    kernel_weisfeiler_lehman_optimal_assignment
+    #kernel_shortest_path
+    #kernel_pyramid_match
+    #kernel_neighborhood_hash
+    #kernel_weisfeiler_lehman
+    #kernel_core_framework
+    #kernel_weisfeiler_lehman_optimal_assignment
     toper_degree
     toper_popularity
     toper_fricci
     toper_oricci
     toper_closeness
-    spectral_zoo
+    #spectral_zoo
 )
 
 METHOD=${METHODS[$SLURM_ARRAY_TASK_ID]}
