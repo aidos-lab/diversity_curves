@@ -14,7 +14,7 @@ from diversity_curves.classifiers import knn_classifier_cv
 from diversity_curves.process import get_funs_df, get_mag_graphs
 from diversity_curves.utils import graph_processing_torch
 
-TIMEOUT_SECONDS = 1200
+TIMEOUT_SECONDS = 7200
 
 CLASSIFIER_KWARGS = dict(
     outer_k=10,
