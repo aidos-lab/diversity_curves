@@ -61,10 +61,19 @@ def timeout(seconds):
         signal.signal(signal.SIGALRM, old_handler)
 
 
-def run_classification(name, X, y, precomputed, classification_path):
-    test_accs, test_aurocs, test_accs_balanced, conf_matrices = knn_classifier_cv(
-        X=X, y=y, precomputed=precomputed, **CLASSIFIER_KWARGS
-    )
+def run_classification(name, X, y, precomputed, classification_path, scale=None):
+    kwargs = dict(CLASSIFIER_KWARGS)
+    if scale is not None:
+        kwargs["scale"] = scale
+    try:
+        test_accs, test_aurocs, test_accs_balanced, conf_matrices = knn_classifier_cv(
+            X=X, y=y, precomputed=precomputed, **kwargs
+        )
+    except:
+        X= pd.DataFrame(X).interpolate(method="linear", axis=0, limit_direction="both").values
+        test_accs, test_aurocs, test_accs_balanced, conf_matrices = knn_classifier_cv(
+                    X=X, y=y, precomputed=precomputed, **kwargs
+                )
     pd.DataFrame(
         {
             "fold": range(len(test_accs)),
@@ -84,7 +93,8 @@ def run_mag(metric, van_graph_list, results_path, y):
     upsample_to = min(max(n_nodes), 50)
 
     if max(n_nodes) > 101:
-        compute_at_cardinality = [r for r in range(5, 101, 5)]
+        compute_at_cardinality = [r for r in range(3, 114, 20)]
+        #[r for r in range(5, 101, 5)]
     else:
         compute_at_cardinality = None
 
