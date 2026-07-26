@@ -5,7 +5,7 @@
 #SBATCH --array=0-3
 #SBATCH --time=12:00:00
 #SBATCH --cpus-per-task=16
-#SBATCH --mem=32G
+#SBATCH --mem=128G
 #SBATCH --nodelist=diufrd201
 #SBATCH --partition=CPU
 
@@ -13,10 +13,10 @@ set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
 
 CONFIGS=(
-    "--node_powers 3 8  --curve_checkpoints 8 16 32 64 128 --ngraphs 30 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/pow08"
-    "--node_powers 3 10 --curve_checkpoints 8 32 128 512 1024  --ngraphs 30 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/pow10"
-    "--node_powers 3 11 --curve_checkpoints 8 64 512 1024 2048 --ngraphs 30 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/pow11"
-    "--node_powers 3 13 --curve_checkpoints 8 512 1024 4096 8192 --ngraphs 30 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/pow13"
+    "--node_powers 3 8 --methods divcurves toper feather netlsd spectral_zoo --curve_checkpoints 8 16 32 64 128 --ngraphs 10 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/pow08"
+    "--node_powers 3 10 --methods divcurves toper feather netlsd spectral_zoo --curve_checkpoints 8 32 128 512 1024  --ngraphs 10 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/pow10"
+    "--node_powers 3 11 --methods divcurves toper feather netlsd spectral_zoo --curve_checkpoints 8 64 512 1024 2048 --ngraphs 10 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/pow11"
+    "--node_powers 3 13 --methods divcurves toper feather netlsd spectral_zoo --curve_checkpoints 8 512 1024 4096 8192 --ngraphs 10 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/pow13"
 )
 
 if (( SLURM_ARRAY_TASK_ID >= ${#CONFIGS[@]} )); then

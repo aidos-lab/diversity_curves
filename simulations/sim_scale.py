@@ -27,7 +27,7 @@ ALL_METHODS = [
     "divcurves",
     "kernel_shortest_path",
     "kernel_wl_oa",
-    #"toper",
+    "toper",
     "netlsd",
     "feather",
     "spectral_zoo",
@@ -121,7 +121,7 @@ KERNEL_CONFIGS = {
     "kernel_shortest_path": [{"name": "shortest_path"}],
     "kernel_wl_oa": [{"name": "weisfeiler_lehman_optimal_assignment"}],
 }
-TOPER_FILTRATIONS = ["degree", "popularity", "fricci", "oricci", "closeness"]
+TOPER_FILTRATIONS = ["degree"]
 
 
 def kernel_compute(graphs_grakel, kernel_name):
