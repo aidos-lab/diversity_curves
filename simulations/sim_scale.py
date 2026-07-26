@@ -12,7 +12,9 @@ from karateclub import NetLSD, FeatherGraph
 import toper
 
 from magnipy.magnitude.distances import get_dist
-from diversity_curves.process import get_mag_graphs, get_funs_df
+from diversity_curves.process import get_funs_df
+from diversity_curves.diversity import compute_magnitude_graph
+from diversity_curves.coarsen import get_upsample_nodes, upsample_graph
 from diversity_curves.simulate import simulate_graphs_kwargs
 from diversity_curves.classifiers import knn_classifier
 from diversity_curves.clustering_performance import (
@@ -95,16 +97,111 @@ def _generate_one_model(model, model_kwargs, n_graphs, node_sizes):
     return model, result, time.perf_counter() - start
 
 
+def _fast_repeat_edge_dropping(this_graph, ts, compute_at_cardinality, min_cardinality):
+    magnitudes, cardinalities = [], []
+
+    n = this_graph.number_of_nodes()
+    if n in compute_at_cardinality:
+        mag, _ = compute_magnitude_graph(this_graph, dist_fn, ts=ts, method="spread", get_weights=False)
+        magnitudes.append(mag[0])
+        cardinalities.append(n)
+
+    prev_n = n + 1
+    while (
+        this_graph.number_of_nodes() > min_cardinality
+        and this_graph.number_of_edges() > 0
+        and this_graph.number_of_nodes() < prev_n
+    ):
+        prev_n = this_graph.number_of_nodes()
+        edges = list(this_graph.edges())
+        order = np.random.permutation(len(edges))
+        consumed = set()
+
+        for idx in order:
+            u, v = edges[idx]
+            if u in consumed or v in consumed:
+                continue
+
+            neighbors_u = set(this_graph.neighbors(u)) - {v}
+            neighbors_v = set(this_graph.neighbors(v)) - {u}
+            for neighbor in neighbors_v - neighbors_u:
+                this_graph.add_edge(u, neighbor)
+            this_graph.remove_node(v)
+            consumed.add(u)
+            consumed.add(v)
+
+            card = this_graph.number_of_nodes()
+            if card in compute_at_cardinality:
+                mag, _ = compute_magnitude_graph(
+                    this_graph, dist_fn, ts=ts, method="spread", get_weights=False
+                )
+                magnitudes.append(mag[0])
+                cardinalities.append(card)
+
+            if this_graph.number_of_nodes() <= min_cardinality or this_graph.number_of_edges() == 0:
+                break
+
+    return magnitudes, cardinalities
+
+
 def _divcurves_chunk(graphs, ts, upsample_to, n_repeats, compute_at_cardinality):
-    all_spreads, _ = get_mag_graphs(
-        graphs,
-        dist_fn,
-        ts=ts,
-        upsample_to=upsample_to,
-        n_repeats=n_repeats,
-        compute_at_cardinality=compute_at_cardinality,
-    )
-    return all_spreads
+    compute_at_cardinality = set(int(c) for c in compute_at_cardinality)
+    min_cardinality = min(compute_at_cardinality) if compute_at_cardinality else 2
+    spread_dfs = []
+
+    for i, g in enumerate(graphs):
+        if g.number_of_nodes() > 0:
+            first_node = next(iter(g.nodes()))
+            if g.nodes[first_node].get("feature") is None:
+                for nd in g.nodes():
+                    g.nodes[nd]["feature"] = np.array([1.0])
+
+        spreads_1 = []
+        for seed in range(n_repeats):
+            np.random.seed(seed)
+            this_graph = g.copy()
+            n = this_graph.number_of_nodes()
+            magnitudes, cardinalities = [], []
+
+            # Upsampling (for graphs smaller than upsample_to) records checkpoints
+            # reached on a throwaway upsampled copy - this_graph itself stays at
+            # its original size and is what actually gets coarsened below, exactly
+            # matching mag_edge_pooling's own upsample-then-separately-coarsen
+            # behavior (its two phases cover disjoint checkpoint ranges: upsampling
+            # reaches checkpoints above n, coarsening reaches checkpoints at/below n).
+            if upsample_to is not None and n < upsample_to:
+                upsampled_nodes = get_upsample_nodes(this_graph, upsample_to)
+                g_upsampled = this_graph.copy()
+                for k in range(len(upsampled_nodes)):
+                    g_upsampled = upsample_graph(
+                        g_upsampled, [upsampled_nodes[k]], lables=[str(k) + "_upsample"]
+                    )
+                    card = g_upsampled.number_of_nodes()
+                    if card in compute_at_cardinality:
+                        mag, _ = compute_magnitude_graph(
+                            g_upsampled, dist_fn, ts=ts, method="spread", get_weights=False
+                        )
+                        magnitudes.append(mag[0])
+                        cardinalities.append(card)
+
+            coarsen_mags, coarsen_cards = _fast_repeat_edge_dropping(
+                this_graph, ts, compute_at_cardinality, min_cardinality
+            )
+            magnitudes += coarsen_mags
+            cardinalities += coarsen_cards
+
+            this_col = pd.Series(magnitudes)
+            this_col.index = pd.Series(cardinalities)
+            this_col = pd.DataFrame(this_col)
+            this_col["repeat"] = seed
+            spreads_1.append(this_col)
+
+        spread_df = pd.concat(spreads_1, axis=0)
+        spread_df.columns = range(spread_df.shape[1])
+        spread_df["graph"] = i
+        spread_dfs.append(spread_df)
+
+    return pd.concat(spread_dfs, axis=0)
 
 
 def _embedding_chunk(graphs, embedding_cls):
@@ -201,10 +298,10 @@ def fit_and_score(name, res_dict, X, y, n_nodes, precomputed=False):
     res_dict[name] = {"n_graphs": len(y)}
     if precomputed:
         silh_mean, silh_std = compute_silhouette_score_resamples(X, y)
-        #ari_agglo_mean, ari_agglo_std = compute_rand_agglo(X, y, metric="precomputed")
+        ari_agglo_mean, ari_agglo_std = compute_rand_agglo(X, y, metric="precomputed")
         res_dict[name]["silh_mean"], res_dict[name]["silh_std"] = silh_mean, silh_std
-        #res_dict[name]["ari_agglo_mean"] = ari_agglo_mean
-        #res_dict[name]["ari_agglo_std"] = ari_agglo_std
+        res_dict[name]["ari_agglo_mean"] = ari_agglo_mean
+        res_dict[name]["ari_agglo_std"] = ari_agglo_std
     else:
         all_clustering_results_euclidean(name, res_dict, X, y)
 
@@ -283,6 +380,16 @@ if __name__ == "__main__":
         default=5000,
         help="Max distinct filtration thresholds per graph for TopER"
     )
+    argparser.add_argument(
+        "--er_avg_degree",
+        type=float,
+        default=None,
+        help="Average degree for the ER model (p = avg_degree / n), so edge "
+        "count grows O(n) instead of O(n^2). Matches the paper's own ER "
+        "setup (p=1/n) at the default of 1. Set to 0 to instead use a fixed "
+        "p=0.75 regardless of n (the original small-graph behavior, which "
+        "makes ER edge count - and coarsening cost - grow O(n^2)).",
+    )
     argparser.add_argument("--methods", type=str, nargs="+", default=ALL_METHODS, choices=ALL_METHODS)
     argparser.add_argument(
         "--n_jobs",
@@ -335,8 +442,13 @@ if __name__ == "__main__":
     if not os.path.exists(results_dir):
         os.makedirs(results_dir, exist_ok=True)
 
+    if args.er_avg_degree:
+        er_params = {"ER_probs": None, "ER_nps": [args.er_avg_degree]}
+    else:
+        er_params = {"ER_probs": [0.75], "ER_nps": None}
+
     model_params = {
-        "ER": {"ER_probs": [0.75], "ER_nps": None},
+        "ER": er_params,
         "RPG": {"RPG_probs": [[0.9, 0.1]], "RPG_props": [1 / 3, 1 / 3]},
         "SBM": {"SBM_probs": [0.8, 0.05], "SBM_blocks": [[1 / 4, 1 / 4, 1 / 4]]},
         "RG": {"RG_probs": [0.25]},
