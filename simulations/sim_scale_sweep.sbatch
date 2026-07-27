@@ -9,7 +9,9 @@
 #SBATCH --nodelist=diufrd201
 #SBATCH --partition=CPU
 
-source /HOME/carrasco/miniconda3/etc/profile.d/conda.sh`
+source /HOME/carrasco/miniconda3/etc/profile.d/conda.sh
+
+conda activate test_new_gpu
 
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
