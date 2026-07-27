@@ -17,11 +17,11 @@ set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
 
 CONFIGS=(
-    "--node_range 10 1000 100 --methods divcurves feather netlsd spectral_zoo --curve_checkpoints 10 30 50 70 90 --ngraphs 10 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/1K"
-    "--node_range 10 2000 500 --methods divcurves feather netlsd spectral_zoo --curve_checkpoints 10 30 50 70 90  --ngraphs 10 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/2K"
-    "--node_range 10 4000 500 --methods divcurves feather netlsd spectral_zoo --curve_checkpoints 10 30 50 70 90  --ngraphs 10 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/4K"
-    "--node_range 10 8000 1000 --methods divcurves feather netlsd spectral_zoo --curve_checkpoints 10 30 50 70 90  --ngraphs 10 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/8K"
-    "--node_range 10 10000 1000 --methods divcurves feather netlsd spectral_zoo --curve_checkpoints 10 30 50 70 90  --ngraphs 10 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/10K"
+    "--node_powers 4 8 --methods divcurves feather netlsd spectral_zoo --curve_checkpoints 16 30 50 70 90 --ngraphs 5 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/1K"
+    "--node_powers 4 9 --methods divcurves feather netlsd spectral_zoo --curve_checkpoints 16 30 50 70 90  --ngraphs 5 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/2K"
+    "--node_powers 4 10 --methods divcurves feather netlsd spectral_zoo --curve_checkpoints 16 30 50 70 90  --ngraphs 5 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/4K"
+    "--node_powers 4 11 --methods divcurves feather netlsd spectral_zoo --curve_checkpoints 16 30 50 70 90  --ngraphs 5 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/8K"
+    "--node_powers 4 12 --methods divcurves feather netlsd spectral_zoo --curve_checkpoints 16 30 50 70 90  --ngraphs 5 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/10K"
 )
 
 if (( SLURM_ARRAY_TASK_ID >= ${#CONFIGS[@]} )); then
