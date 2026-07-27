@@ -9,14 +9,16 @@
 #SBATCH --nodelist=diufrd201
 #SBATCH --partition=CPU
 
+source /HOME/carrasco/miniconda3/etc/profile.d/conda.sh`
+
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
 
 CONFIGS=(
-    "--node_powers 10 1000 --methods divcurves feather netlsd spectral_zoo --curve_checkpoints 10 30 50 70 90 --ngraphs 10 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/1K"
-    "--node_powers 10 2000 --methods divcurves feather netlsd spectral_zoo --curve_checkpoints 10 30 50 70 90  --ngraphs 10 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/2K"
-    "--node_powers 10 4000 --methods divcurves feather netlsd spectral_zoo --curve_checkpoints 10 30 50 70 90  --ngraphs 10 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/4K"
-    "--node_powers 10 8000 --methods divcurves feather netlsd spectral_zoo --curve_checkpoints 10 30 50 70 90  --ngraphs 10 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/8K"
+    "--node_range 10 1000 --methods divcurves feather netlsd spectral_zoo --curve_checkpoints 10 30 50 70 90 --ngraphs 10 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/1K"
+    "--node_range 10 2000 --methods divcurves feather netlsd spectral_zoo --curve_checkpoints 10 30 50 70 90  --ngraphs 10 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/2K"
+    "--node_range 10 4000 --methods divcurves feather netlsd spectral_zoo --curve_checkpoints 10 30 50 70 90  --ngraphs 10 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/4K"
+    "--node_range 10 8000 --methods divcurves feather netlsd spectral_zoo --curve_checkpoints 10 30 50 70 90  --ngraphs 10 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/8K"
     "--node_range 10 10000 --methods divcurves feather netlsd spectral_zoo --curve_checkpoints 10 30 50 70 90  --ngraphs 10 --n_timing_runs 2 --large_graph_cutoff 2000 --toper_num_segm 1000000000 --output_dir simulations/results/sim_scale/10K"
 )
 
