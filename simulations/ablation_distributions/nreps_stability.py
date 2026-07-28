@@ -30,8 +30,7 @@ from diversity_curves.baselines.spectral_zoo import est_moment
 from diversity_curves.baselines.ph import obtain_input_from_graphs
 
 if __name__ == "__main__":
-    np.random.seed(43)
-    random.seed(314)
+
 
     argparser = argparse.ArgumentParser()
     argparser.add_argument(
@@ -172,6 +171,8 @@ if __name__ == "__main__":
     for metric in graph_metrics:
 
             for i_seed in range(n_seeds):
+                np.random.seed(i_seed)
+                random.seed(i_seed)   
 
                 res_dict[(f"divcurves_{metric}", i_seed)] = {}
                 res_dict[(f"divcurves_pca_{metric}", i_seed)] = {}
