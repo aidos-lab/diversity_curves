@@ -138,7 +138,7 @@ if __name__ == '__main__':
             # avg_accs_seeds[model][f'divcurves_{metric}'] = []
             # avg_accs_seeds[model][f'divcurves_pca_{metric}'] = []
 
-            mag_funs_per_seed = []
+            # mag_funs_per_seed = []
 
             model_results[f'divcurves_{metric}'] = {}
             model_results[f'divcurves_pca_{metric}'] = {}
@@ -160,7 +160,7 @@ if __name__ == '__main__':
                 mag_funs = get_funs_df(all_spreads)
                 mag_funs_interpolated = mag_funs.interpolate(method='linear', axis='columns')
 
-                mag_funs_per_seed.append(mag_funs_interpolated)
+                # mag_funs_per_seed.append(mag_funs_interpolated)
 
                 # # compute clustering metrics based on euclidean distance of diversity curve vectors 
                 # ari_kmeans_mean, ari_kmeans_std = compute_rand_kmeans(np.array(mag_funs_interpolated), y)

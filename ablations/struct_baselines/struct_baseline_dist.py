@@ -204,6 +204,13 @@ if __name__ == '__main__':
     ### computing baselines ###
     ###########################
 
+    def binned_norm_spectra(G):
+        norm_spectra = nx.normalized_laplacian_spectrum(G)
+        norm_spectra[norm_spectra<0] = 0
+        norm_spectra[norm_spectra>2] = 2
+        hist, edges = np.histogram(norm_spectra, 20, range=(0,2))
+        return hist
+
 
     struct_baselines = {
         'nnodes': lambda G: G.number_of_nodes(),
@@ -214,6 +221,8 @@ if __name__ == '__main__':
         'avg_shortest_path': lambda G: np.mean([nx.average_shortest_path_length(G.subgraph(c).copy()) for c in nx.connected_components(G)]),
         'max_diameter': lambda G: np.max([nx.diameter(G.subgraph(c).copy()) for c in nx.connected_components(G)]),
         'deg_statistic': lambda G: sorted(list(dict(G.degree()).values())),
+        'laplacian_spectrum_pad': lambda G: nx.laplacian_spectrum(G),
+        'laplacian_spectrum_bin': lambda G: binned_norm_spectra(G),
     }
 
     # for collecting a summary statistic vector
@@ -221,15 +230,24 @@ if __name__ == '__main__':
 
     # one at a time
     for n_baseline in struct_baselines:
-        if n_baseline != 'deg_statistic':
+        if n_baseline not in ['deg_statistic', 'laplacian_spectrum_pad', 'laplacian_spectrum_bin'] :
             array = np.array([struct_baselines[n_baseline](G_nx[i]) for i in range(len(G_nx))])
             array = array.reshape(-1,1)
-        else:
+        elif n_baseline == 'deg_statistic':
             array = []
             for G in G_nx:
                 padded_feature = np.pad(struct_baselines[n_baseline](G), (0, 30-len(struct_baselines[n_baseline](G))), constant_values=(0,0))
                 array.append(padded_feature)
             array = np.array(array)
+        elif n_baseline == 'laplacian_spectrum_pad':
+            array = []
+            for G in G_nx:
+                padded_feature = np.pad(struct_baselines[n_baseline](G), (0, 30-len(struct_baselines[n_baseline](G))), constant_values=(-1,-1))
+                array.append(padded_feature)
+            array = np.array(array)
+        elif n_baseline == 'laplacian_spectrum_bin':
+            array = np.array([struct_baselines[n_baseline](G_nx[i]) for i in range(len(G_nx))])
+            
         res_dict[f'structure_baseline_{n_baseline}'] = {}
         res_dict[f'structure_baseline_{n_baseline}'] = {}
         res_dict[f'structure_baseline_{n_baseline}'] = {}

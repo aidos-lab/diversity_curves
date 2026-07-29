@@ -259,10 +259,11 @@ if __name__ == "__main__":
                     np.array(y),
                     precomputed=False,
                     groups=np.array(n_nodes),
+                    seed=seed,
                 )
             else:
                 test_accs = knn_classifier(
-                    np.array(mag_funs_interpolated), np.array(y), precomputed=False
+                    np.array(mag_funs_interpolated), np.array(y), precomputed=False, seed=seed,
                 )
             accs_seeds[f"divcurves_{metric}"].append(test_accs)
             res_dict[f"divcurves_{metric}"]["acc_mean"].append(np.mean(test_accs))
@@ -276,10 +277,10 @@ if __name__ == "__main__":
             # computing clustering scores and accuracies on transformed data from PCA
             if n_graphs > 1:
                 test_accs = knn_classifier(
-                    X_pca, np.array(y), precomputed=False, groups=np.array(n_nodes)
+                    X_pca, np.array(y), precomputed=False, groups=np.array(n_nodes), seed=seed,
                 )
             else:
-                test_accs = knn_classifier(X_pca, np.array(y), precomputed=False)
+                test_accs = knn_classifier(X_pca, np.array(y), precomputed=False, seed=seed, )
             accs_seeds[f"divcurves_pca_{metric}"].append(test_accs)
             res_dict[f"divcurves_pca_{metric}"]["acc_mean"].append(np.mean(test_accs))
             res_dict[f"divcurves_pca_{metric}"]["acc_std"].append(np.std(test_accs))
@@ -345,7 +346,6 @@ if __name__ == "__main__":
             std_rand_diffs.append(np.std(l2_differences))
 
         #create version of distance distribution without mean curve
-        comp_method = 'different_group'
 
         for seed_i in range(n_seeds):
             for seed_j in range(seed_i+1, n_seeds):
