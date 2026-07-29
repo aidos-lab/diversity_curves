@@ -203,14 +203,14 @@ if __name__ == "__main__":
 
                     # compute clustering metrics based on euclidean distance of diversity curve vectors
                     ari_kmeans_mean, ari_kmeans_std = compute_rand_kmeans(
-                        np.array(mag_funs_interpolated), y
+                        np.array(mag_funs_interpolated), y, set_seed = False,
                     )
                     ari_agglo_mean, ari_agglo_std = compute_rand_agglo(
-                        np.array(mag_funs_interpolated), y, metric="euclidean"
+                        np.array(mag_funs_interpolated), y, metric="euclidean", set_seed = False,
                     )
 
                     means, stds = compute_clustering_scores_resample(
-                        np.array(mag_funs_interpolated), y
+                        np.array(mag_funs_interpolated), y, set_seed = False,
                     )
 
                     (
@@ -235,10 +235,11 @@ if __name__ == "__main__":
                             np.array(y),
                             precomputed=False,
                             groups=np.array(n_nodes),
+                            seed=i_seed,
                         )
                     else:
                         test_accs = knn_classifier(
-                            np.array(mag_funs_interpolated), np.array(y), precomputed=False
+                            np.array(mag_funs_interpolated), np.array(y), precomputed=False, seed=i_seed,
                         )
 
                     res_dict[(f"divcurves_{metric}", i_seed)][("acc_mean", n_rep)] = np.mean(test_accs)
@@ -251,23 +252,23 @@ if __name__ == "__main__":
                     # computing clustering scores and accuracies on transformed data from PCA
                     if n_graphs > 1:
                         test_accs = knn_classifier(
-                            X_pca, np.array(y), precomputed=False, groups=np.array(n_nodes)
+                            X_pca, np.array(y), precomputed=False, groups=np.array(n_nodes), seed=i_seed,
                         )
                     else:
-                        test_accs = knn_classifier(X_pca, np.array(y), precomputed=False)
+                        test_accs = knn_classifier(X_pca, np.array(y), precomputed=False,seed=i_seed)
 
                     res_dict[(f"divcurves_pca_{metric}", i_seed)][("acc_mean", n_rep)] = np.mean(test_accs)
                     res_dict[(f"divcurves_pca_{metric}", i_seed)][("acc_std", n_rep)] = np.std(test_accs)
                     # all_clustering_results_euclidean(f"divcurves_pca_{metric}_nreps_{n_rep}", res_dict, X_pca, y)
                     ari_kmeans_mean, ari_kmeans_std = compute_rand_kmeans(
-                        X_pca, y
+                        X_pca, y, set_seed = False,
                     )
                     ari_agglo_mean, ari_agglo_std = compute_rand_agglo(
-                        X_pca, y, metric="euclidean"
+                        X_pca, y, metric="euclidean", set_seed = False,
                     )
 
                     means, stds = compute_clustering_scores_resample(
-                        X_pca, y
+                        X_pca, y, set_seed = False,
                     )
 
                     (
