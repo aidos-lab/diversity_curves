@@ -172,6 +172,10 @@ if __name__ == "__main__":
             upsample_to=upsample_to,
             downsample_to=downsample_to,
             n_repeats=3,
+            scores_method='random',
+            mode='structure',
+            set_seed=False,
+            compute_at_cardinality=list(range(1,30))
         )
 
         mag_funs = get_funs_df(all_spreads)
@@ -205,7 +209,7 @@ if __name__ == "__main__":
         res_dict[f"divcurves_{metric}"]["ari_kmeans_std"] = ari_kmeans_std
 
         # computing accuracies
-        if n_graphs > 1:
+        if n_graphs > 1 and len(noderange) > 1:
             test_accs = knn_classifier(
                 np.array(mag_funs_interpolated),
                 np.array(y),
@@ -225,7 +229,7 @@ if __name__ == "__main__":
         X_pca = pca_embedding.fit_transform(np.array(mag_funs_interpolated))
 
         # computing clustering scores and accuracies on transformed data from PCA
-        if n_graphs > 1:
+        if n_graphs > 1 and len(noderange) > 1:
             test_accs = knn_classifier(
                 X_pca, np.array(y), precomputed=False, groups=np.array(n_nodes)
             )
@@ -265,7 +269,7 @@ if __name__ == "__main__":
         )
         mag_funs = np.vstack(mags)
 
-        if n_graphs > 1:
+        if n_graphs > 1 and len(noderange) > 1:
             test_accs = knn_classifier(
                 mag_funs, np.array(y), precomputed=False, groups=np.array(n_nodes)
             )
@@ -303,7 +307,7 @@ if __name__ == "__main__":
             f"graph_embedding_{embedding_name}", res_dict, array, y
         )
 
-        if n_graphs > 1:
+        if n_graphs > 1 and len(noderange) > 1:
             test_accs = knn_classifier(
                 array, np.array(y), precomputed=False, groups=np.array(n_nodes)
             )
@@ -356,7 +360,7 @@ if __name__ == "__main__":
             res_dict[f"kernel_{k_}"]["ari_agglo_std"] = ari_agglo_std
 
             # Compute accuracies with distance obtained from kernel matrix
-            if n_graphs > 1:
+            if n_graphs > 1 and len(noderange) > 1:
                 test_accs = knn_classifier(
                     -K + K.max(),
                     np.array(y),
@@ -378,7 +382,7 @@ if __name__ == "__main__":
                     f"kernel_mds_{k_}", res_dict, X_transformed, y
                 )
 
-                if n_graphs > 1:
+                if n_graphs > 1 and len(noderange) > 1:
                     test_accs = knn_classifier(
                         X_transformed,
                         np.array(y),
@@ -421,7 +425,7 @@ if __name__ == "__main__":
                 f"toper_{filt}_sub", res_dict, array_sub, y
             )
 
-            if n_graphs > 1:
+            if n_graphs > 1 and len(noderange) > 1:
                 test_accs = knn_classifier(
                     array_sub, np.array(y), precomputed=False, groups=np.array(n_nodes)
                 )
@@ -442,7 +446,7 @@ if __name__ == "__main__":
     if not np.isnan(all_sub).any():
         res_dict[f"toper_all_sub"] = {}
         all_clustering_results_euclidean(f"toper_all_sub", res_dict, all_sub, y)
-        if n_graphs > 1:
+        if n_graphs > 1 and len(noderange) > 1:
             test_accs = knn_classifier(
                 all_sub, np.array(y), precomputed=False, groups=np.array(n_nodes)
             )
@@ -464,7 +468,7 @@ if __name__ == "__main__":
 
     all_clustering_results_euclidean("spectral_zoo", res_dict, array, y)
 
-    if n_graphs > 1:
+    if n_graphs > 1 and len(noderange) > 1:
         test_accs = knn_classifier(
             array, np.array(y), precomputed=False, groups=np.array(n_nodes)
         )
@@ -503,7 +507,7 @@ if __name__ == "__main__":
             )
 
             # computing accuracies
-            if n_graphs > 1:
+            if n_graphs > 1 and len(noderange) > 1:
                 test_accs = knn_classifier(
                     array_ph, np.array(y), precomputed=False, groups=np.array(n_nodes)
                 )
