@@ -18,11 +18,12 @@ def compute_clustering_scores(X, labels):
     return silhouette, davies_bouldin, calinski_harabasz
 
 
-def compute_rand_kmeans(X, labels_true):
+def compute_rand_kmeans(X, labels_true, set_seed = True,):
     aris = []
     n_resamples = 100
     for i in range(n_resamples):
-        np.random.seed(i)
+        if set_seed:
+            np.random.seed(i)
         indices = np.random.choice(len(X), size=int(len(X) * 0.5), replace=False)
         X_sample = X[indices]
         labels_sample = np.array(labels_true)[indices]
@@ -44,11 +45,13 @@ def compute_rand_agglo(
     X,
     labels_true,
     metric="euclidean",
+    set_seed = True,
 ):
     aris = []
     n_resamples = 100
     for i in range(n_resamples):
-        np.random.seed(i)
+        if set_seed:
+            np.random.seed(i)
         indices = np.random.choice(len(X), size=int(len(X) * 0.5), replace=False)
         if metric == "precomputed":
             rows_sample = X[indices, :]
@@ -68,13 +71,14 @@ def compute_rand_agglo(
     return np.mean(aris), np.std(aris)
 
 
-def compute_clustering_scores_resample(X, labels):
+def compute_clustering_scores_resample(X, labels, set_seed = True):
     silhouette_scores = []
     davies_bouldin_scores = []
     calinski_harabasz_scores = []
     n_resamples = 100
     for i in range(n_resamples):
-        np.random.seed(i)  # for reproducibility
+        if set_seed:
+            np.random.seed(i)  # for reproducibility
         indices = np.random.choice(len(X), size=int(len(X) * 0.5), replace=False)
         X_sample = X[indices]
         labels_sample = np.array(labels)[indices]
@@ -143,5 +147,24 @@ def all_clustering_results_euclidean(method, df, X, y):
     df[method]["ari_agglo_std"] = ari_agglo_std
     df[method]["ari_kmeans_mean"] = ari_kmeans_mean
     df[method]["ari_kmeans_std"] = ari_kmeans_std
+
+    return
+
+def all_clustering_results_euclidean_append(method, df, X, y):
+    ari_kmeans_mean, ari_kmeans_std = compute_rand_kmeans(X, y)
+    ari_agglo_mean, ari_agglo_std = compute_rand_agglo(X, y, metric="euclidean")
+
+    means, stds = compute_clustering_scores_resample(X, y)
+
+    df[method]["silh_mean"].append(means[0])
+    df[method]["db_mean"].append(means[1])
+    df[method]["ch_mean"].append(means[2])
+    df[method]["silh_std"].append(stds[0])
+    df[method]["db_std"].append(stds[1])
+    df[method]["ch_std"].append(stds[2])
+    df[method]["ari_agglo_mean"].append(ari_agglo_mean)
+    df[method]["ari_agglo_std"].append(ari_agglo_std)
+    df[method]["ari_kmeans_mean"].append(ari_kmeans_mean)
+    df[method]["ari_kmeans_std"].append(ari_kmeans_std)
 
     return
