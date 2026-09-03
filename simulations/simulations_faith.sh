@@ -5,7 +5,7 @@
 #SBATCH --error=logs/error_%j.txt
 #SBATCH --ntasks=1
 #SBATCH --partition=CPU
-#SBATCH --nodelist=diufrd204
+#SBATCH --nodelist=diufrd201
 #SBATCH --cpus-per-task=4
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=nadja.haeusermann@unifr.ch
