@@ -59,6 +59,18 @@ if __name__ == "__main__":
         default=1,
         help="Specify the stepsize for the cardinalities of the generated graphs",
     )
+    argparser.add_argument(
+        "--max_compute_card",
+        type=int,
+        help="Specify the maximum cardinality at which we evaluate the diversity curve, default is max cardinality in the datasets",
+    )
+
+    argparser.add_argument(
+            "--step_compute_card",
+            type=int,
+            default=1,
+            help="Specify the step between cardinalities at which we evaluate the diversity curve",
+        )
 
     args = argparser.parse_args()
     results_dir = args.output_dir
@@ -66,6 +78,11 @@ if __name__ == "__main__":
     n_high = args.nrange[1]
     n_steps = args.nsteps
     n_graphs = args.ngraphs
+    if args.max_compute_card is None:
+        max_at_card = n_high
+    else:
+        max_at_card = args.max_compute_card
+    step_at_card = args.step_compute_card
 
     # Setting the parameters as reported in the paper
     model_params = {
@@ -175,8 +192,10 @@ if __name__ == "__main__":
             scores_method='random',
             mode='structure',
             set_seed=False,
-            compute_at_cardinality=list(range(1,30))
+            compute_at_cardinality=list(range(1,max_at_card, step_at_card))
         )
+
+        print(f'diversity curve computed at cardinalities: {list(range(1,max_at_card, step_at_card))}')
 
         mag_funs = get_funs_df(all_spreads)
         mag_funs_interpolated = mag_funs.interpolate(method="linear", axis="columns")
@@ -263,7 +282,7 @@ if __name__ == "__main__":
         ####################################################
         ## Computing diversity baseline, spread functinon ##
         ####################################################
-
+        print('computing standard magnitude function')
         mags, _ = get_mag_funs_graphs(
             G_nx, dist_fn, ts=np.linspace(1, 5, 20), method="spread", get_weights=False
         )
@@ -288,6 +307,7 @@ if __name__ == "__main__":
     ###########################
 
     # graph embeddings
+    
     embeddings = {
         "netLSD": NetLSD(),
         "graph2vec": Graph2Vec(),
@@ -295,6 +315,7 @@ if __name__ == "__main__":
     }
 
     for embedding_name in embeddings:
+        print(f'computing graph embedding {embedding_name}')
         embedding = embeddings[embedding_name]
         embedding.fit([g.copy() for g in G_nx])
         array = embedding.get_embedding()
@@ -327,6 +348,7 @@ if __name__ == "__main__":
     ]
 
     for k_ in kernel_names:
+        print(f'computing kernel {k_}')
         # General kernels
         if k_ in ["weisfeiler_lehman", "core_framework"]:
             gk = GraphKernel(
@@ -403,6 +425,7 @@ if __name__ == "__main__":
     # topER
     all_sub = []
     for filt in ["degree", "popularity", "fricci", "oricci", "closeness"]:
+        print(f'computing toper with filtration {filt}')    
         F = toper.main(G_nx, [filt])
         if filt == "fricci":
             filt = "forricci"
@@ -458,6 +481,7 @@ if __name__ == "__main__":
         print("array_sub_super contains nan, cannot compute clustering metrics")
 
     # spectralzoo
+    print(f'computing spectral zoo')
     moments = []
     for graph in G_nx:
         moments.append(est_moment(graph, 10000, 4))
@@ -488,6 +512,7 @@ if __name__ == "__main__":
     ]
 
     for filtration in ph_filtrations:
+        print(f'computing persistent homology with {filtration} filtration')
         res_dict[f"persistent_homology_{filtration}"] = {}
 
         print(f"computing persistent homology with {filtration} filtration.")
