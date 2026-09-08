@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=divcurves_simulations
-#SBATCH --time=1:00:00
+#SBATCH --time=00:10:00
 #SBATCH --output=logs/output_%j.txt
 #SBATCH --error=logs/error_%j.txt
 #SBATCH --ntasks=1
