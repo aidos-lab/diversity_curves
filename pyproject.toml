@@ -9,8 +9,6 @@ dependencies = [
     "magnipy",
     "networkx>=3.4.2",
     "pygsp>=0.6.1",
-    "torch-geometric>=2.7.0",
-    "torch-cluster",
     "networkit>=11.2.1",
     "toper>=1.0.3",
     "gudhi>=3.11.0",
@@ -29,7 +27,6 @@ dependencies = [
 
 [tool.uv.extra-build-dependencies]
 grakel-dev = ["pip"]
-torch-cluster = ["torch"]
 
 [tool.uv.sources]
 magnipy = { git = "https://github.com/aidos-lab/magnipy", rev = "magnitude_computations" }
