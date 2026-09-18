@@ -66,6 +66,18 @@ if __name__ == "__main__":
         default=1,
         help="Specify the stepsize for the cardinalities of the generated graphs",
     )
+    argparser.add_argument(
+        "--max_compute_card",
+        type=int,
+        help="Specify the maximum cardinality at which we evaluate the diversity curve, default is max cardinality in the datasets",
+    )
+
+    argparser.add_argument(
+        "--step_compute_card",
+        type=int,
+        default=1,
+        help="Specify the step between cardinalities at which we evaluate the diversity curve",
+    )
 
     args = argparser.parse_args()
     results_dir = args.output_dir
@@ -73,6 +85,11 @@ if __name__ == "__main__":
     n_high = args.nrange[1]
     n_steps = args.nsteps
     n_graphs = args.ngraphs
+    if args.max_compute_card is None:
+            max_at_card = n_high
+    else:
+        max_at_card = args.max_compute_card
+    step_at_card = args.step_compute_card
 
     # setting the parameters as reported in the paper
     models_configs = {
@@ -164,7 +181,7 @@ if __name__ == "__main__":
                     for i, p in enumerate(model_kwargs["RPG_probs"])
                 }
 
-        compute_at_cardinality = None
+        compute_at_cardinality = list(range(1,max_at_card, step_at_card))
         upsample_to = max(n_nodes)
         downsample_to = None
 
@@ -190,7 +207,9 @@ if __name__ == "__main__":
                 upsample_to=upsample_to,
                 downsample_to=downsample_to,
                 n_repeats=3,
+                set_seed=False,
                 scores_method="random",
+                mode='structure',
                 compute_at_cardinality=compute_at_cardinality,
             )
 
