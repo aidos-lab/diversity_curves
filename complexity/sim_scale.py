@@ -34,6 +34,7 @@ ALL_METHODS = [
     "feather",
     "spectral_zoo",
     "ph_vietoris_rips",
+    "ph_alpha"
 ]
 EXPENSIVE_METHODS = {"kernel_shortest_path", "kernel_wl_oa", "toper", "ph_vietoris_rips"}
 
@@ -46,6 +47,7 @@ DISPLAY_NAMES = {
     "feather": "FEATHER",
     "spectral_zoo": "Spectral Zoo",
     "ph_vietoris_rips": "PH Vietoris-Rips",
+    "ph_alpha": "PH Alpha Complex",
 }
 
 metric = "shortest_path_distance"
@@ -252,6 +254,9 @@ def toper_compute(graphs, filtrations=TOPER_FILTRATIONS, n_jobs=1, num_segm=1e9)
 
 def ph_vietoris_rips_compute(graphs, k=2):
     return obtain_input_from_graphs(graphs, filtration_fn_name="vietoris_rips", k=k)
+
+def ph_alpha_compute(graphs, k=2):
+    return obtain_input_from_graphs(graphs, filtration_fn_name="alpha_complex", k=k)
 
 
 def run_timed(compute_fn, n_runs):
@@ -629,6 +634,20 @@ if __name__ == "__main__":
         try:
             array_ph, run_times = run_timed(
                 lambda: ph_vietoris_rips_compute(G_nx_small), args.n_timing_runs
+            )
+            fit_and_score("ph_vietoris_rips", res_dict, array_ph, y_small, n_nodes_small)
+            record_timing("ph_vietoris_rips", res_dict, timings, run_times)
+        except MemoryError as e:
+            print(f"PH Vietoris-Rips ran out of memory: {e}")
+
+    if "ph_alpha" in args.methods:
+        print(
+            f"Computing PH Alpha Complex on {len(G_nx_small)} graphs "
+            f"(<= {args.large_graph_cutoff} nodes, {args.n_timing_runs} timing run(s))..."
+        )
+        try:
+            array_ph, run_times = run_timed(
+                lambda: ph_alpha_compute(G_nx_small), args.n_timing_runs
             )
             fit_and_score("ph_vietoris_rips", res_dict, array_ph, y_small, n_nodes_small)
             record_timing("ph_vietoris_rips", res_dict, timings, run_times)
