@@ -85,10 +85,7 @@ if __name__ == "__main__":
     n_high = args.nrange[1]
     n_steps = args.nsteps
     n_graphs = args.ngraphs
-    if args.max_compute_card is None:
-            max_at_card = n_high
-    else:
-        max_at_card = args.max_compute_card
+
     step_at_card = args.step_compute_card
 
     # setting the parameters as reported in the paper
@@ -138,6 +135,14 @@ if __name__ == "__main__":
     all_configs = {}
     all_results = {}
 
+    # noderange = range(n_low, n_high, n_steps)
+    noderange = list(range(10,30)) + list(range(100,130))
+
+    if args.max_compute_card is None:
+        max_at_card = np.max(noderange)
+    else:
+        max_at_card = args.max_compute_card
+
     for model in models:
         model_results = {}
         scores_dfs = []
@@ -155,7 +160,7 @@ if __name__ == "__main__":
         G_nx, Gs, y, y_probs, n_nodes = simulate_graphs_kwargs(
             model=model,
             n_graphs=n_graphs,
-            nodes_range=range(n_low, n_high, n_steps),
+            nodes_range=noderange,
             **model_kwargs,
         )
 

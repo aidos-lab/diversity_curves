@@ -78,10 +78,7 @@ if __name__ == "__main__":
     n_high = args.nrange[1]
     n_steps = args.nsteps
     n_graphs = args.ngraphs
-    if args.max_compute_card is None:
-        max_at_card = n_high
-    else:
-        max_at_card = args.max_compute_card
+
     step_at_card = args.step_compute_card
 
     # Setting the parameters as reported in the paper
@@ -111,7 +108,15 @@ if __name__ == "__main__":
         all_configs[model] = model_config
     configuration = tuple(all_configs[model] for model in models)
 
-    noderange = range(n_low, n_high, n_steps)
+    # noderange = range(n_low, n_high, n_steps)
+    ## custom node range 
+    noderange = list(range(10,30)) + list(range(100,130)) + list(range(200,230))
+
+    if args.max_compute_card is None:
+        max_at_card = np.max(noderange)
+    else:
+        max_at_card = args.max_compute_card
+    
     downsample_to = None
 
     scores = [
@@ -342,8 +347,8 @@ if __name__ == "__main__":
         "shortest_path",
         "pyramid_match",
         "neighborhood_hash",
-        "weisfeiler_lehman",
-        "core_framework",
+        # "weisfeiler_lehman",
+        # "core_framework",
         "weisfeiler_lehman_optimal_assignment",
     ]
 
