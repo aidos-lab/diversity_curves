@@ -16,8 +16,10 @@ pwd; hostname; date
 echo "Just checking the version of Python on the server"
 python --version
 
+echo "uv run -m simulations.sim_params --output_dir ./simulations/results_cluster/sim_params/nrange10_30_100_130/ --step_compute_card 5"
+
 # uv run -m simulations.sim_params --output_dir ./simulations/results/sim_params/nrange10_30_100_130_200_230/ --step_compute_card 5 
-uv run -m simulations.sim_params --output_dir ./simulations/results/sim_params/nrange10_30_100_130/ --step_compute_card 5 
+uv run -m simulations.sim_params --output_dir ./simulations/results_cluster/sim_params/nrange10_30_100_130/ --step_compute_card 5 
 
 
 echo "Display the host name End"

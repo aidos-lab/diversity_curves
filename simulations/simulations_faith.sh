@@ -14,11 +14,11 @@
 #SBATCH --array=0-4
 
 CONFIGS=(
- "--nrange 10 200 --nsteps 5 --ngraphs 1 --max_compute_card 100 --step_compute_card 5 --output_dir /simulations/results_cluster/sim_distributions/nrange10_200nsteps_5/max_comcard_100step_compute_card_5/ "
- "--nrange 10 200 --nsteps 10 --ngraphs 2 --max_compute_card 100 --step_compute_card 5 --output_dir /simulations/results_cluster/sim_distributions/nrange10_300nsteps_10/max_comcard_100step_compute_card_5/"
- "--nrange 10 200 --nsteps 5 --ngraphs 1 --max_compute_card 150 --step_compute_card 5 --output_dir /simulations/results_cluster/sim_distributions/nrange10_200nsteps_5/max_comcard_100step_compute_card_5/ "
- "--nrange 10 200 --nsteps 10 --ngraphs 2 --max_compute_card 150 --step_compute_card 5 --output_dir /simulations/results_cluster/sim_distributions/nrange10_300nsteps_10/max_comcard_100step_compute_card_5/"
- "--nrange 10 300 --nsteps 10 --ngraph 1 --max_compute_card 100 --step_compute_card 5 --output_dir /simulations/results_cluster/sim_distributions/nrange10_300nsteps_10/max_comcard_100step_compute_card_5/"   
+ "--nrange 10 200 --nsteps 5 --ngraphs 1 --max_compute_card 100 --step_compute_card 5 --output_dir /simulations/results_cluster/sim_distributions/nrange10_200nsteps_5ngraphs_1/max_comcard_100step_compute_card_5/ "
+ "--nrange 10 200 --nsteps 10 --ngraphs 2 --max_compute_card 100 --step_compute_card 5 --output_dir /simulations/results_cluster/sim_distributions/nrange10_200nsteps_10ngraphs_2/max_comcard_100step_compute_card_5/"
+ "--nrange 10 200 --nsteps 5 --ngraphs 1 --max_compute_card 150 --step_compute_card 5 --output_dir /simulations/results_cluster/sim_distributions/nrange10_200nsteps_5ngraphs_1/max_comcard_150step_compute_card_5/ "
+ "--nrange 10 200 --nsteps 10 --ngraphs 2 --max_compute_card 150 --step_compute_card 5 --output_dir /simulations/results_cluster/sim_distributions/nrange10_200nsteps_10ngraphs_2/max_comcard_150step_compute_card_5/"
+ "--nrange 10 300 --nsteps 10 --ngraph 1 --max_compute_card 100 --step_compute_card 5 --output_dir /simulations/results_cluster/sim_distributions/nrange10_300nsteps_10ngraphs_1/max_comcard_100step_compute_card_5/"   
 )
 
 task_index=$((SLURM_ARRAY_TASK_ID))
