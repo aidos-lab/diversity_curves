@@ -4,11 +4,13 @@
 #SBATCH --output=logs/output_%j.txt
 #SBATCH --error=logs/error_%j.txt
 #SBATCH --ntasks=1
-#SBATCH --partition=CPU
-#SBATCH --nodelist=diufrd201
+#SBATCH --partition=GPU
+#SBATCH --nodelist=diufrd204
+#SBATCH --gres=gpu:0
 #SBATCH --cpus-per-task=1
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=nadja.haeusermann@unifr.ch
+#SBATCH --mem=32G
 
 echo "Display the host name Start"
 pwd; hostname; date
