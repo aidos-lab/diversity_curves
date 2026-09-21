@@ -6,6 +6,7 @@
 #SBATCH --ntasks=1
 #SBATCH --partition=GPU
 #SBATCH --nodelist=diufrd204
+#SBATCH --gres=gpu:0
 #SBATCH --cpus-per-task=1
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=nadja.haeusermann@unifr.ch
