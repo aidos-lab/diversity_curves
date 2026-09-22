@@ -167,8 +167,8 @@ if __name__ == '__main__':
     args = argparser.parse_args()
     method = args.method
 
-    # n_nodes = [2**i for i in range(4, 6)]
-    n_nodes = [2**i for i in range(7, 14)]
+    n_nodes = [2**i for i in range(4, 6)]
+    # n_nodes = [2**i for i in range(4, 14)]
     n_graphs = 30
     n_reruns = 10
     max_n_mag = 100
@@ -372,4 +372,4 @@ if __name__ == '__main__':
             times[f'spectral_zoo'][(n, 'std')] = np.std(samples)
 
     times_df = pd.DataFrame.from_dict(times, orient="index")
-    times_df.to_csv(f"./results/time_complexities_{method}_ngraphs_{n_graphs}_maxnodes_{max(n_nodes)}.csv")
+    times_df.to_csv(f"./results_cluster/time_complexities_{method}_ngraphs_{n_graphs}_maxnodes_{max(n_nodes)}.csv")
