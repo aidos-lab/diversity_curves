@@ -9,11 +9,136 @@ import toper
 import argparse
 import signal
 
-import mag_graph
+# import mag_graph
 from magnipy.magnitude.distances import get_dist
-from mag_graph.process import get_mag_graphs, get_weight_diffs, get_funs_diff, get_mag_areas, get_mag_funs_graphs, get_funs_df
-from mag_graph.baselines.spectral_zoo import est_moment
-from mag_graph.baselines.ph import obtain_input_from_graphs
+from diversity_curves.process import get_mag_graphs, get_weight_diffs, get_funs_diff, get_mag_areas, get_mag_funs_graphs, get_funs_df
+from diversity_curves.baselines.spectral_zoo import est_moment
+from diversity_curves.baselines.ph import obtain_input_from_graphs
+from diversity_curves.diversity import compute_magnitude_graph
+from diversity_curves.coarsen import get_upsample_nodes, upsample_graph
+
+def fast_repeat_edge_dropping(this_graph, ts, compute_at_cardinality, min_cardinality):
+    magnitudes, cardinalities = [], []
+
+    n = this_graph.number_of_nodes()
+    if n in compute_at_cardinality:
+        mag, _ = compute_magnitude_graph(this_graph, dist_fn, ts=ts, method="spread", get_weights=False)
+        magnitudes.append(mag[0])
+        cardinalities.append(n)
+
+    prev_n = n + 1
+    while (
+        this_graph.number_of_nodes() > min_cardinality
+        and this_graph.number_of_edges() > 0
+        and this_graph.number_of_nodes() < prev_n
+    ):
+        prev_n = this_graph.number_of_nodes()
+        edges = list(this_graph.edges())
+        order = np.random.permutation(len(edges))
+        consumed = set()
+
+        for idx in order:
+            u, v = edges[idx]
+            if u in consumed or v in consumed:
+                continue
+
+            neighbors_u = set(this_graph.neighbors(u)) - {v}
+            neighbors_v = set(this_graph.neighbors(v)) - {u}
+            for neighbor in neighbors_v - neighbors_u:
+                this_graph.add_edge(u, neighbor)
+            this_graph.remove_node(v)
+            consumed.add(u)
+            consumed.add(v)
+
+            card = this_graph.number_of_nodes()
+            if card in compute_at_cardinality:
+                mag, _ = compute_magnitude_graph(
+                    this_graph, dist_fn, ts=ts, method="spread", get_weights=False
+                )
+                magnitudes.append(mag[0])
+                cardinalities.append(card)
+
+            if this_graph.number_of_nodes() <= min_cardinality or this_graph.number_of_edges() == 0:
+                break
+
+    return magnitudes, cardinalities
+
+def fast_get_mag_graphs(
+        graphs,
+        dist_fn,
+        ts,
+        upsample_to=None,
+        n_repeats=5,
+        compute_at_cardinality=None,
+        mode="full",
+        scores_method="random",
+        upsample_method="nodes",
+        downsample_to=None,
+        upsample_mode="node_duplicating",
+        coarsening = "edges", 
+        set_seed=True):
+    compute_at_cardinality = set(int(c) for c in compute_at_cardinality)
+    min_cardinality = min(compute_at_cardinality) if compute_at_cardinality else 2
+    spread_dfs = []
+    weights_lists = []
+
+    for i, g in enumerate(graphs):
+
+        spreads_1 = []
+        weight_dict = {}
+        if g.number_of_nodes() > 0:
+            first_node = list(g.nodes())[0]
+            if g.nodes[first_node].get("feature") is None:
+                for n in g.nodes():
+                    g.nodes[n]["feature"] = np.array([1.0])
+
+        for seed in range(n_repeats):
+            np.random.seed(seed)
+            this_graph = g.copy()
+            n = this_graph.number_of_nodes()
+            magnitudes, cardinalities = [], []
+
+            # Upsampling (for graphs smaller than upsample_to) records checkpoints
+            # reached on a throwaway upsampled copy - this_graph itself stays at
+            # its original size and is what actually gets coarsened below, exactly
+            # matching mag_edge_pooling's own upsample-then-separately-coarsen
+            # behavior (its two phases cover disjoint checkpoint ranges: upsampling
+            # reaches checkpoints above n, coarsening reaches checkpoints at/below n).
+            if upsample_to is not None and n < upsample_to:
+                upsampled_nodes = get_upsample_nodes(this_graph, upsample_to)
+                g_upsampled = this_graph.copy()
+                for k in range(len(upsampled_nodes)):
+                    g_upsampled = upsample_graph(
+                        g_upsampled, [upsampled_nodes[k]], lables=[str(k) + "_upsample"]
+                    )
+                    card = g_upsampled.number_of_nodes()
+                    if card in compute_at_cardinality:
+                        mag, _ = compute_magnitude_graph(
+                            g_upsampled, dist_fn, ts=ts, method="spread", get_weights=False
+                        )
+                        magnitudes.append(mag[0])
+                        cardinalities.append(card)
+
+            coarsen_mags, coarsen_cards = fast_repeat_edge_dropping(
+                this_graph, ts, compute_at_cardinality, min_cardinality
+            )
+            magnitudes += coarsen_mags
+            cardinalities += coarsen_cards
+
+            this_col = pd.Series(magnitudes)
+            this_col.index = pd.Series(cardinalities)
+            this_col = pd.DataFrame(this_col)
+            this_col["repeat"] = seed
+            spreads_1.append(this_col)
+
+        spread_df = pd.concat(spreads_1, axis=0)
+        spread_df.columns = range(spread_df.shape[1])
+        spread_df["graph"] = i
+        spread_dfs.append(spread_df)
+
+    all_spreads = pd.concat(spread_dfs, axis=0)
+    return all_spreads
+
 
 class OutOfTimeException(Exception):
     def __init__(self, message='Exceeded time limit'):
@@ -53,7 +178,7 @@ if __name__ == '__main__':
     metric = 'shortest_path_distance'
     times = {}
 
-    # magnitude
+    # divcurve
     if method == 'magnitude':
         times[f'spread_{metric}'] = {}
         for n in n_nodes:
@@ -66,6 +191,26 @@ if __name__ == '__main__':
                     return get_dist(G=G, X=None, X2=None, metric=metric, mode="structure")#"euclidean", mode="attributes") # structure # full
 
                 all_spreads, weights_lists = get_mag_graphs(graphs[n], dist_fn, ts=[1], n_repeats=1, scores_method='random', compute_at_cardinality=compute_at_cardinality, mode="structure")
+
+                end_time = time.perf_counter()
+
+                samples.append(end_time - start_time) 
+            times[f'spread_{metric}'][(n, 'mean')] = np.mean(samples)
+            times[f'spread_{metric}'][(n, 'std')] = np.std(samples)
+
+    # fast divcurve
+    if method == 'fast_divcurve':
+        times[f'spread_{metric}'] = {}
+        for n in n_nodes:
+            samples = []
+            for i in range(n_reruns):
+                
+                compute_at_cardinality = [i for i in range(10,max_n_mag, 20)]
+                start_time = time.perf_counter()
+                def dist_fn(G):
+                    return get_dist(G=G, X=None, X2=None, metric=metric, mode="structure")#"euclidean", mode="attributes") # structure # full
+
+                all_spreads, weights_lists = fast_get_mag_graphs(graphs[n], dist_fn, ts=[1], n_repeats=1, scores_method='random', compute_at_cardinality=compute_at_cardinality, mode="structure")
 
                 end_time = time.perf_counter()
 
