@@ -56,7 +56,7 @@ if __name__ == "__main__":
     argparser.add_argument(
         "--nrange",
         type=int,
-        nargs=2,
+        nargs='*',
         default=[10, 30],
         help="specify the range of cardinalities of the generated graphs",
     )
@@ -81,8 +81,6 @@ if __name__ == "__main__":
 
     args = argparser.parse_args()
     results_dir = args.output_dir
-    n_low = args.nrange[0]
-    n_high = args.nrange[1]
     n_steps = args.nsteps
     n_graphs = args.ngraphs
 
@@ -101,6 +99,21 @@ if __name__ == "__main__":
             "RPG_props": [1 / 3, 1 / 3],
         },
     }
+
+    #setting cardinalities
+    n_range = args.nrange
+    n_low = np.min(n_range)
+    n_high = np.max(n_range)
+    if len(n_range) % 2 !=0:
+        raise Exception(
+                        "Node range must come in pairs"
+                    )
+    else:
+        noderange = []
+        for i in range(0,len(n_range),2):
+            n_low = n_range[i]
+            n_high = n_range[i+1]
+            noderange += range(n_low, n_high, n_steps)
 
     if args.models is None:
         models = models = list(models_configs.keys())
@@ -134,6 +147,41 @@ if __name__ == "__main__":
 
     all_configs = {}
     all_results = {}
+    stage_status = {}
+    n_nodes = []
+
+    def checkpoint():
+        all_results[model] = pd.DataFrame.from_dict(model_results, orient="index")
+        res_combined = pd.concat(
+            [all_results[key] for key in all_results.keys()],
+            axis=1,
+            keys=all_results.keys(),
+        )
+        res_combined.to_csv(f"{results_dir}/results_combined.csv")
+        pd.DataFrame({"n_nodes": n_nodes}).to_csv(f"{results_dir}/n_nodes.csv")
+        pd.DataFrame.from_dict(
+            all_configs, orient="index", columns=["configurations"]
+        ).to_csv(f"{results_dir}/configs.csv")
+        pd.DataFrame.from_dict(stage_status, orient="index").to_csv(
+            f"{results_dir}/stage_status.csv"
+        )
+
+    def run_stage(name, fn):
+        stage_status[name] = {"status": "running"}
+        success = False
+        try:
+            fn()
+            stage_status[name] = {"status": "success"}
+            success = True
+        except MemoryError as e:
+            print(f"[OOM] stage '{name}' ran out of memory: {e}")
+            stage_status[name] = {"status": "oom", "error": str(e)}
+        except Exception as e:
+            print(f"[FAILED] stage '{name}' raised {type(e).__name__}: {e}")
+            stage_status[name] = {"status": "error", "error": str(e)}
+        finally:
+            checkpoint()
+        return success
 
     # noderange = range(n_low, n_high, n_steps)
     noderange = list(range(10,30)) + list(range(100,130))
@@ -149,6 +197,7 @@ if __name__ == "__main__":
         model_params = models_configs[model].keys()
         config = [models_configs[model][para] for para in model_params]
         model_kwargs = models_configs[model]
+        all_configs[model] = str(config)
 
         # setting parameters and folder for plots
         sns.set_style("white")
@@ -196,145 +245,148 @@ if __name__ == "__main__":
 
         for metric in graph_metrics:
 
-            model_results[f"divcurves_{metric}"] = {}
-            model_results[f"divcurves_pca_{metric}"] = {}
-            model_results[f"div_function_{metric}"] = {}
+            def stage_fn():
+                model_results[f"divcurves_{metric}"] = {}
+                model_results[f"divcurves_pca_{metric}"] = {}
+                model_results[f"div_function_{metric}"] = {}
 
-            print(f"Computing MAG with metric: {metric}")
+                print(f"Computing MAG with metric: {metric}")
 
-            def dist_fn(G):
-                return get_dist(G=G, X=None, X2=None, metric=metric, mode="structure")
+                def dist_fn(G):
+                    return get_dist(G=G, X=None, X2=None, metric=metric, mode="structure")
 
-            all_spreads, weights_lists = get_mag_graphs(
-                [g.copy() for g in G_nx],
-                dist_fn,
-                ts=[1],
-                upsample_to=upsample_to,
-                downsample_to=downsample_to,
-                n_repeats=3,
-                set_seed=False,
-                scores_method="random",
-                mode='structure',
-                compute_at_cardinality=compute_at_cardinality,
-            )
-
-            mag_funs = get_funs_df(all_spreads)
-            mag_funs_interpolated = mag_funs.interpolate(
-                method="linear", axis="columns"
-            )
-
-            # compute clustering metrics based on euclidean distance of diversity curve vectors
-            ari_kmeans_mean, ari_kmeans_std = compute_rand_kmeans(
-                np.array(mag_funs_interpolated), y
-            )
-            ari_agglo_mean, ari_agglo_std = compute_rand_agglo(
-                np.array(mag_funs_interpolated), y, metric="euclidean"
-            )
-
-            means, stds = compute_clustering_scores_resample(
-                np.array(mag_funs_interpolated), y
-            )
-
-            (
-                model_results[f"divcurves_{metric}"]["silh_mean"],
-                model_results[f"divcurves_{metric}"]["db_mean"],
-                model_results[f"divcurves_{metric}"]["ch_mean"],
-            ) = means
-            (
-                model_results[f"divcurves_{metric}"]["silh_std"],
-                model_results[f"divcurves_{metric}"]["db_std"],
-                model_results[f"divcurves_{metric}"]["ch_std"],
-            ) = stds
-            model_results[f"divcurves_{metric}"]["ari_agglo_mean"] = ari_agglo_mean
-            model_results[f"divcurves_{metric}"]["ari_agglo_std"] = ari_agglo_std
-            model_results[f"divcurves_{metric}"]["ari_kmeans_mean"] = ari_kmeans_mean
-            model_results[f"divcurves_{metric}"]["ari_kmeans_std"] = ari_kmeans_std
-
-            # computing accuracies
-            if n_graphs > 1:
-                test_accs = knn_classifier(
-                    np.array(mag_funs_interpolated),
-                    np.array(y),
-                    precomputed=False,
-                    groups=np.array(n_nodes),
-                )
-            else:
-                test_accs = knn_classifier(
-                    np.array(mag_funs_interpolated), np.array(y), precomputed=False
+                all_spreads, weights_lists = get_mag_graphs(
+                    [g.copy() for g in G_nx],
+                    dist_fn,
+                    ts=[1],
+                    upsample_to=upsample_to,
+                    downsample_to=downsample_to,
+                    n_repeats=3,
+                    set_seed=False,
+                    scores_method="random",
+                    mode='structure',
+                    compute_at_cardinality=compute_at_cardinality,
                 )
 
-            model_results["divcurves_" + metric]["acc_mean"] = np.mean(test_accs)
-            model_results["divcurves_" + metric]["acc_std"] = np.std(test_accs)
-
-            # doing PCA with Euclidean distance between the diversity curves
-            pca_embedding = PCA(n_components=2)
-            X_pca = pca_embedding.fit_transform(np.array(mag_funs_interpolated))
-
-            # computing clustering scores and accuracies on transformed data from PCA
-            all_clustering_results_euclidean(
-                f"divcurves_pca_{metric}", model_results, X_pca, y
-            )
-            if n_graphs > 1:
-                test_accs = knn_classifier(
-                    X_pca, np.array(y), precomputed=False, groups=np.array(n_nodes)
+                mag_funs = get_funs_df(all_spreads)
+                mag_funs_interpolated = mag_funs.interpolate(
+                    method="linear", axis="columns"
                 )
-            else:
-                test_accs = knn_classifier(X_pca, np.array(y), precomputed=False)
 
-            model_results[f"divcurves_pca_{metric}"]["acc_mean"] = np.mean(test_accs)
-            model_results[f"divcurves_pca_{metric}"]["acc_std"] = np.std(test_accs)
-
-            # creating PCA plots
-            fig = sns.scatterplot(x=X_pca[:, 0], y=X_pca[:, 1], hue=y, palette="tab10")
-            handles, labels = fig.get_legend_handles_labels()
-            fig.legend(
-                handles=handles,
-                labels=[hue_names[old_label] for old_label in labels],
-                frameon=False,
-                loc=(1.04, 0),
-                bbox_to_anchor=(1, 0.5),
-            )
-            sns.despine()
-            plt.savefig(
-                results_dir + f"{model}/divcurves_pca_{metric}.pdf",
-                dpi=300,
-                format="pdf",
-                bbox_inches="tight",
-            )
-            plt.savefig(
-                results_dir + f"{model}/divcurves_pca_{metric}.png",
-                dpi=300,
-                format="png",
-                bbox_inches="tight",
-            )
-            plt.close()
-
-            ####################################################
-            ## Computing diversity baseline, spread functinon ##
-            ####################################################
-
-            mags, _ = get_mag_funs_graphs(
-                G_nx,
-                dist_fn,
-                ts=np.linspace(1, 5, 20),
-                method="spread",
-                get_weights=False,
-            )
-            mag_funs = np.vstack(mags)
-
-            if n_graphs > 1:
-                test_accs = knn_classifier(
-                    mag_funs, np.array(y), precomputed=False, groups=np.array(n_nodes)
+                # compute clustering metrics based on euclidean distance of diversity curve vectors
+                ari_kmeans_mean, ari_kmeans_std = compute_rand_kmeans(
+                    np.array(mag_funs_interpolated), y
                 )
-            else:
-                test_accs = knn_classifier(mag_funs, np.array(y), precomputed=False)
+                ari_agglo_mean, ari_agglo_std = compute_rand_agglo(
+                    np.array(mag_funs_interpolated), y, metric="euclidean"
+                )
 
-            model_results[f"div_function_{metric}"]["acc_mean"] = np.mean(test_accs)
-            model_results[f"div_function_{metric}"]["acc_std"] = np.std(test_accs)
+                means, stds = compute_clustering_scores_resample(
+                    np.array(mag_funs_interpolated), y
+                )
 
-            all_clustering_results_euclidean(
-                f"div_function_{metric}", model_results, mag_funs, y
-            )
+                (
+                    model_results[f"divcurves_{metric}"]["silh_mean"],
+                    model_results[f"divcurves_{metric}"]["db_mean"],
+                    model_results[f"divcurves_{metric}"]["ch_mean"],
+                ) = means
+                (
+                    model_results[f"divcurves_{metric}"]["silh_std"],
+                    model_results[f"divcurves_{metric}"]["db_std"],
+                    model_results[f"divcurves_{metric}"]["ch_std"],
+                ) = stds
+                model_results[f"divcurves_{metric}"]["ari_agglo_mean"] = ari_agglo_mean
+                model_results[f"divcurves_{metric}"]["ari_agglo_std"] = ari_agglo_std
+                model_results[f"divcurves_{metric}"]["ari_kmeans_mean"] = ari_kmeans_mean
+                model_results[f"divcurves_{metric}"]["ari_kmeans_std"] = ari_kmeans_std
+
+                # computing accuracies
+                if n_graphs > 1:
+                    test_accs = knn_classifier(
+                        np.array(mag_funs_interpolated),
+                        np.array(y),
+                        precomputed=False,
+                        groups=np.array(n_nodes),
+                    )
+                else:
+                    test_accs = knn_classifier(
+                        np.array(mag_funs_interpolated), np.array(y), precomputed=False
+                    )
+
+                model_results["divcurves_" + metric]["acc_mean"] = np.mean(test_accs)
+                model_results["divcurves_" + metric]["acc_std"] = np.std(test_accs)
+
+                # doing PCA with Euclidean distance between the diversity curves
+                pca_embedding = PCA(n_components=2)
+                X_pca = pca_embedding.fit_transform(np.array(mag_funs_interpolated))
+
+                # computing clustering scores and accuracies on transformed data from PCA
+                all_clustering_results_euclidean(
+                    f"divcurves_pca_{metric}", model_results, X_pca, y
+                )
+                if n_graphs > 1:
+                    test_accs = knn_classifier(
+                        X_pca, np.array(y), precomputed=False, groups=np.array(n_nodes)
+                    )
+                else:
+                    test_accs = knn_classifier(X_pca, np.array(y), precomputed=False)
+
+                model_results[f"divcurves_pca_{metric}"]["acc_mean"] = np.mean(test_accs)
+                model_results[f"divcurves_pca_{metric}"]["acc_std"] = np.std(test_accs)
+
+                # creating PCA plots
+                fig = sns.scatterplot(x=X_pca[:, 0], y=X_pca[:, 1], hue=y, palette="tab10")
+                handles, labels = fig.get_legend_handles_labels()
+                fig.legend(
+                    handles=handles,
+                    labels=[hue_names[old_label] for old_label in labels],
+                    frameon=False,
+                    loc=(1.04, 0),
+                    bbox_to_anchor=(1, 0.5),
+                )
+                sns.despine()
+                plt.savefig(
+                    results_dir + f"{model}/divcurves_pca_{metric}.pdf",
+                    dpi=300,
+                    format="pdf",
+                    bbox_inches="tight",
+                )
+                plt.savefig(
+                    results_dir + f"{model}/divcurves_pca_{metric}.png",
+                    dpi=300,
+                    format="png",
+                    bbox_inches="tight",
+                )
+                plt.close()
+
+                ####################################################
+                ## Computing diversity baseline, spread functinon ##
+                ####################################################
+
+                mags, _ = get_mag_funs_graphs(
+                    G_nx,
+                    dist_fn,
+                    ts=np.linspace(1, 5, 20),
+                    method="spread",
+                    get_weights=False,
+                )
+                mag_funs = np.vstack(mags)
+
+                if n_graphs > 1:
+                    test_accs = knn_classifier(
+                        mag_funs, np.array(y), precomputed=False, groups=np.array(n_nodes)
+                    )
+                else:
+                    test_accs = knn_classifier(mag_funs, np.array(y), precomputed=False)
+
+                model_results[f"div_function_{metric}"]["acc_mean"] = np.mean(test_accs)
+                model_results[f"div_function_{metric}"]["acc_std"] = np.std(test_accs)
+
+                all_clustering_results_euclidean(
+                    f"div_function_{metric}", model_results, mag_funs, y
+                )
+
+            run_stage(f"{model}::divcurves_{metric}", stage_fn)
 
         ###########################
         ### computing baselines ###
@@ -348,30 +400,34 @@ if __name__ == "__main__":
         }
 
         for embedding_name in embeddings:
-            embedding = embeddings[embedding_name]
-            embedding.fit([g.copy() for g in G_nx])
-            array = embedding.get_embedding()
 
-            model_results[f"graph_embedding_{embedding_name}"] = {}
-            model_results[f"graph_embedding_mds_{embedding_name}"] = {}
-            model_results[f"graph_embedding_pca_{embedding_name}"] = {}
+            def stage_fn():
+                embedding = embeddings[embedding_name]
+                embedding.fit([g.copy() for g in G_nx])
+                array = embedding.get_embedding()
 
-            all_clustering_results_euclidean(
-                f"graph_embedding_{embedding_name}", model_results, array, y
-            )
+                model_results[f"graph_embedding_{embedding_name}"] = {}
+                model_results[f"graph_embedding_mds_{embedding_name}"] = {}
+                model_results[f"graph_embedding_pca_{embedding_name}"] = {}
 
-            if n_graphs > 1:
-                test_accs = knn_classifier(
-                    array, np.array(y), precomputed=False, groups=np.array(n_nodes)
+                all_clustering_results_euclidean(
+                    f"graph_embedding_{embedding_name}", model_results, array, y
                 )
-            else:
-                test_accs = knn_classifier(array, np.array(y), precomputed=False)
-            model_results[f"graph_embedding_{embedding_name}"]["acc_mean"] = np.mean(
-                test_accs
-            )
-            model_results[f"graph_embedding_{embedding_name}"]["acc_std"] = np.std(
-                test_accs
-            )
+
+                if n_graphs > 1:
+                    test_accs = knn_classifier(
+                        array, np.array(y), precomputed=False, groups=np.array(n_nodes)
+                    )
+                else:
+                    test_accs = knn_classifier(array, np.array(y), precomputed=False)
+                model_results[f"graph_embedding_{embedding_name}"]["acc_mean"] = np.mean(
+                    test_accs
+                )
+                model_results[f"graph_embedding_{embedding_name}"]["acc_std"] = np.std(
+                    test_accs
+                )
+
+            run_stage(f"{model}::graph_embedding_{embedding_name}", stage_fn)
 
         # kernels
         kernel_names = [
@@ -384,24 +440,21 @@ if __name__ == "__main__":
         ]
 
         for k_ in kernel_names:
-            # General kernels
-            if k_ in ["weisfeiler_lehman", "core_framework"]:
-                gk = GraphKernel(
-                    kernel=[{"name": k_}, {"name": "shortest_path"}], normalize=True
-                )
 
-            # Base kernels
-            else:
-                gk = GraphKernel(kernel=[{"name": k_}], normalize=True)
+            def stage_fn():
+                # General kernels
+                if k_ in ["weisfeiler_lehman", "core_framework"]:
+                    gk = GraphKernel(
+                        kernel=[{"name": k_}, {"name": "shortest_path"}], normalize=True
+                    )
 
-            # Calculate the kernel matrix
-            kernel_success = False
-            try:
+                # Base kernels
+                else:
+                    gk = GraphKernel(kernel=[{"name": k_}], normalize=True)
+
+                # Calculate the kernel matrix
                 K = gk.fit_transform(Gs)
-                kernel_success = True
-            except Exception as e:
-                print(f"Kernel {k_} failed with error: {e}")
-            if kernel_success:
+
                 model_results[f"kernel_{k_}"] = {}
                 model_results[f"kernel_mds_{k_}"] = {}
 
@@ -462,88 +515,101 @@ if __name__ == "__main__":
                         f"There are {(np.var(-K+K.max(), axis=0) == 0).sum()} out of {(-K+K.max()).shape[1]} zero variance cols: {-K+K.max()}"
                     )
 
+            run_stage(f"{model}::kernel_{k_}", stage_fn)
+
         # topER
         all_sub = []
         for filt in ["degree", "popularity", "fricci", "oricci", "closeness"]:
-            F = toper.main(G_nx, [filt])
-            if filt == "fricci":
-                filt = "forricci"
-            elif filt == "oricci":
-                filt = "olricci"
-            array_super = np.array(F[f"{filt}_super"])
-            array_sub = np.array(F[f"{filt}_sub"])
-            array_sub_super = np.array(
-                np.concatenate([F[f"{filt}_sub"], F[f"{filt}_super"]], axis=1)
-            )
-            print(
-                f"shape of the toper arrays: {array_sub.shape}, {array_sub_super.shape}, {array_super.shape}"
-            )
 
-            # sub level filtrations
-            if not np.isnan(array_sub).any():
-                model_results[f"toper_{filt}_sub"] = {}
+            def stage_fn(filt=filt):
+                F = toper.main(G_nx, [filt])
+                if filt == "fricci":
+                    filt = "forricci"
+                elif filt == "oricci":
+                    filt = "olricci"
+                array_super = np.array(F[f"{filt}_super"])
+                array_sub = np.array(F[f"{filt}_sub"])
+                array_sub_super = np.array(
+                    np.concatenate([F[f"{filt}_sub"], F[f"{filt}_super"]], axis=1)
+                )
+                print(
+                    f"shape of the toper arrays: {array_sub.shape}, {array_sub_super.shape}, {array_super.shape}"
+                )
 
+                # sub level filtrations
+                if not np.isnan(array_sub).any():
+                    model_results[f"toper_{filt}_sub"] = {}
+
+                    all_clustering_results_euclidean(
+                        f"toper_{filt}_sub", model_results, array_sub, y
+                    )
+                    if n_graphs > 1:
+                        test_accs = knn_classifier(
+                            array_sub,
+                            np.array(y),
+                            precomputed=False,
+                            groups=np.array(n_nodes),
+                        )
+                    else:
+                        test_accs = knn_classifier(
+                            array_sub, np.array(y), precomputed=False
+                        )
+                    model_results[f"toper_{filt}_sub"]["acc_mean"] = np.mean(test_accs)
+                    model_results[f"toper_{filt}_sub"]["acc_std"] = np.std(test_accs)
+
+                    all_sub.append(array_sub)
+                else:
+                    print(
+                        f"array sub contains nan, did not compute clustering metrics and accuracies"
+                    )
+
+            run_stage(f"{model}::toper_{filt}", stage_fn)
+
+        # combined sublevel filtrations
+        def stage_fn():
+            combined = all_sub
+            if len(combined) > 0:
+                combined = np.concatenate(combined, axis=1)
+            if not np.isnan(combined).any():
+                model_results[f"toper_all_sub"] = {}
                 all_clustering_results_euclidean(
-                    f"toper_{filt}_sub", model_results, array_sub, y
+                    f"toper_all_sub", model_results, combined, y
                 )
                 if n_graphs > 1:
                     test_accs = knn_classifier(
-                        array_sub,
-                        np.array(y),
-                        precomputed=False,
-                        groups=np.array(n_nodes),
+                        combined, np.array(y), precomputed=False, groups=np.array(n_nodes)
                     )
                 else:
-                    test_accs = knn_classifier(
-                        array_sub, np.array(y), precomputed=False
-                    )
-                model_results[f"toper_{filt}_sub"]["acc_mean"] = np.mean(test_accs)
-                model_results[f"toper_{filt}_sub"]["acc_std"] = np.std(test_accs)
-
-                all_sub.append(array_sub)
+                    test_accs = knn_classifier(combined, np.array(y), precomputed=False)
+                model_results[f"toper_all_sub"]["acc_mean"] = np.mean(test_accs)
+                model_results[f"toper_all_sub"]["acc_std"] = np.std(test_accs)
             else:
-                print(
-                    f"array sub contains nan, did not compute clustering metrics and accuracies"
-                )
+                print("array_sub_super contains nan, cannot compute clustering metrics")
 
-        # combined sublevel filtrations
-        if len(all_sub) > 0:
-            all_sub = np.concatenate(all_sub, axis=1)
-        if not np.isnan(all_sub).any():
-            model_results[f"toper_all_sub"] = {}
-            all_clustering_results_euclidean(
-                f"toper_all_sub", model_results, all_sub, y
-            )
-            if n_graphs > 1:
-                test_accs = knn_classifier(
-                    all_sub, np.array(y), precomputed=False, groups=np.array(n_nodes)
-                )
-            else:
-                test_accs = knn_classifier(all_sub, np.array(y), precomputed=False)
-            model_results[f"toper_all_sub"]["acc_mean"] = np.mean(test_accs)
-            model_results[f"toper_all_sub"]["acc_std"] = np.std(test_accs)
-        else:
-            print("array_sub_super contains nan, cannot compute clustering metrics")
+        run_stage(f"{model}::toper_all_sub", stage_fn)
 
         # spectralzoo
-        moments = []
-        for graph in G_nx:
-            moments.append(est_moment(graph, 10000, 4))
-        array = np.array(moments)
-        array = array[:, ~np.all(array == 0, axis=0)]
+        def stage_fn():
+            moments = []
+            for graph in G_nx:
+                moments.append(est_moment(graph, 10000, 4))
+            array = np.array(moments)
+            array = array[:, ~np.all(array == 0, axis=0)]
 
-        model_results["spectral_zoo"] = {}
+            model_results["spectral_zoo"] = {}
 
-        all_clustering_results_euclidean("spectral_zoo", model_results, array, y)
+            all_clustering_results_euclidean("spectral_zoo", model_results, array, y)
 
-        if n_graphs > 1:
-            test_accs = knn_classifier(
-                array, np.array(y), precomputed=False, groups=np.array(n_nodes)
-            )
-        else:
-            test_accs = knn_classifier(array, np.array(y), precomputed=False)
-        model_results["spectral_zoo"]["acc_mean"] = np.mean(test_accs)
-        model_results["spectral_zoo"]["acc_std"] = np.std(test_accs)
+            if n_graphs > 1:
+                test_accs = knn_classifier(
+                    array, np.array(y), precomputed=False, groups=np.array(n_nodes)
+                )
+            else:
+                test_accs = knn_classifier(array, np.array(y), precomputed=False)
+            model_results["spectral_zoo"]["acc_mean"] = np.mean(test_accs)
+            model_results["spectral_zoo"]["acc_std"] = np.std(test_accs)
+
+        run_stage(f"{model}::spectral_zoo", stage_fn)
 
         # persistent homology
         ph_filtrations = [
@@ -556,19 +622,15 @@ if __name__ == "__main__":
         ]
 
         for filtration in ph_filtrations:
-            model_results[f"persistent_homology_{filtration}"] = {}
 
-            print(f"computing persistent homology with {filtration} filtration.")
-            success = False
-            try:
+            def stage_fn():
+                model_results[f"persistent_homology_{filtration}"] = {}
+
+                print(f"computing persistent homology with {filtration} filtration.")
                 array_ph = obtain_input_from_graphs(
                     G_nx, filtration_fn_name=filtration, k=2
                 )
-                success = True
-            except MemoryError as e:
-                print(f"Memory Error {e} for filtration {filtration}")
 
-            if success:
                 # compute clusterin metrics based on euclidean distance of persistent homology
                 all_clustering_results_euclidean(
                     f"persistent_homology_{filtration}", model_results, array_ph, y
@@ -592,25 +654,7 @@ if __name__ == "__main__":
                     test_accs
                 )
 
-        # storing results of model
-        res_df = pd.DataFrame.from_dict(model_results, orient="index")
-        all_results[model] = res_df
-        all_configs[model] = str(config)
+            run_stage(f"{model}::persistent_homology_{filtration}", stage_fn)
 
-    # combine results of all models
-    res_combined = pd.concat(
-        [all_results[key] for key in all_results.keys()],
-        axis=1,
-        keys=all_results.keys(),
-    )
-
-    # save results
-    df_n_nodes = pd.DataFrame({"n_nodes": n_nodes})
-    df_n_nodes.to_csv(f"{results_dir}/n_nodes.csv")
-
-    res_combined.to_csv(f"{results_dir}/results_combined.csv")
-
-    df_best_configs = pd.DataFrame.from_dict(
-        all_configs, orient="index", columns=["configurations"]
-    )
-    df_best_configs.to_csv(f"{results_dir}/configs.csv")
+    # final checkpoint (redundant safety net; run_stage already checkpoints after each stage)
+    checkpoint()
