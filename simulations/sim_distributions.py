@@ -95,8 +95,6 @@ if __name__ == "__main__":
             n_high = n_range[i+1]
             noderange += range(n_low, n_high, n_steps)
 
-    print(f' node range: {noderange}')
-
     ## custom node range 
     # noderange = list(range(10,30)) + list(range(100,130)) + list(range(200,230))
 
