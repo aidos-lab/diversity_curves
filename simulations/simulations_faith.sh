@@ -11,7 +11,7 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=nadja.haeusermann@unifr.ch
 #SBATCH --mem=32G
-#SBATCH --array=0-4
+#SBATCH --array=0-3
 #SBATCH --chdir=/HOME/haeuserm/diversity_curves
 
 CONFIGS=(
