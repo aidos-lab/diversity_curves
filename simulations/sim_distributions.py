@@ -49,7 +49,7 @@ if __name__ == "__main__":
     argparser.add_argument(
         "--nrange",
         type=int,
-        nargs=2,
+        nargs='*',
         default=[10, 30],
         help="specify the range of cardinalities of the generated graphs",
     )
@@ -74,12 +74,31 @@ if __name__ == "__main__":
 
     args = argparser.parse_args()
     results_dir = args.output_dir
-    n_low = args.nrange[0]
-    n_high = args.nrange[1]
+
     n_steps = args.nsteps
     n_graphs = args.ngraphs
 
     step_at_card = args.step_compute_card
+
+    #setting cardinalities
+    n_range = args.nrange
+    n_low = np.min(n_range)
+    n_high = np.max(n_range)
+    if len(n_range) % 2 !=0:
+        raise Exception(
+                        "Node range must come in pairs"
+                    )
+    else:
+        noderange = []
+        for i in range(0,len(n_range),2):
+            n_low = n_range[i]
+            n_high = n_range[i+1]
+            noderange += range(n_low, n_high, n_steps)
+
+    print(f' node range: {noderange}')
+
+    ## custom node range 
+    # noderange = list(range(10,30)) + list(range(100,130)) + list(range(200,230))
 
     # Setting the parameters as reported in the paper
     model_params = {
@@ -108,9 +127,7 @@ if __name__ == "__main__":
         all_configs[model] = model_config
     configuration = tuple(all_configs[model] for model in models)
 
-    noderange = range(n_low, n_high, n_steps)
-    ## custom node range 
-    # noderange = list(range(10,30)) + list(range(100,130)) + list(range(200,230))
+    
 
     if args.max_compute_card is None:
         max_at_card = np.max(noderange)
