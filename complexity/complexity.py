@@ -167,8 +167,8 @@ if __name__ == '__main__':
     args = argparser.parse_args()
     method = args.method
 
-    n_nodes = [2**i for i in range(4, 6)]
-    # n_nodes = [2**i for i in range(4, 14)]
+    # n_nodes = [2**i for i in range(4, 6)]
+    n_nodes = [2**i for i in range(4, 14)]
     n_graphs = 30
     n_reruns = 10
     max_n_mag = 100
