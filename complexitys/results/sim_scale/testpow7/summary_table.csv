@@ -1,2 +1,9 @@
 Method,Accuracy,Silhouette Score,n_graphs,Time
-Diversity Curves (ours),0.62 ± 0.12,0.22 ± 0.07,80,16.8s ± 0.3s
+Diversity Curves (ours),0.62 ± 0.12,0.22 ± 0.07,80,16.1s ± 0.3s
+Kernel WL Opt. Assig.,0.50 ± 0.00,-0.01 ± 0.00,80,0.5s ± 0.2s
+Kernel Shortest Path,0.72 ± 0.04,0.35 ± 0.08,80,2.1s ± 1.8s
+TopER,0.46 ± 0.02,-0.21 ± 0.03,80,1.1s ± 0.0s
+NetLSD,0.56 ± 0.11,-0.08 ± 0.06,80,0.6s ± 0.1s
+FEATHER,0.50 ± 0.00,-0.07 ± 0.03,80,1.1s ± 0.0s
+Spectral Zoo,0.50 ± 0.00,-0.17 ± 0.05,80,3.7s ± 0.0s
+PH Vietoris-Rips,0.51 ± 0.02,-0.12 ± 0.04,80,4.6s ± 0.3s
