@@ -56,6 +56,7 @@ if __name__ == "__main__":
     argparser.add_argument(
         "--nsteps",
         type=int,
+        nargs='*',
         default=1,
         help="Specify the stepsize for the cardinalities of the generated graphs",
     )
@@ -75,7 +76,7 @@ if __name__ == "__main__":
     args = argparser.parse_args()
     results_dir = args.output_dir
 
-    n_steps = args.nsteps
+    
     n_graphs = args.ngraphs
 
     step_at_card = args.step_compute_card
@@ -84,17 +85,21 @@ if __name__ == "__main__":
     n_range = args.nrange
     n_low = np.min(n_range)
     n_high = np.max(n_range)
+    all_n_steps = args.nsteps
     if len(n_range) % 2 !=0:
         raise Exception(
                         "Node range must come in pairs"
                     )
     else:
+        if len(all_n_steps) != len(n_range)/2:
+            raise Exception('length steps does not match length noderanges')
         noderange = []
-        for i in range(0,len(n_range),2):
-            n_low = n_range[i]
-            n_high = n_range[i+1]
-            noderange += range(n_low, n_high, n_steps)
+        for i in range(len(all_n_steps)):
+            n_low = n_range[2*i]
+            n_high = n_range[2*i+1]
+            noderange += range(n_low, n_high, all_n_steps[i])
 
+    print(f'noderange: {noderange}')
     ## custom node range 
     # noderange = list(range(10,30)) + list(range(100,130)) + list(range(200,230))
 
