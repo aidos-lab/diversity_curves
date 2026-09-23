@@ -3,7 +3,12 @@ divcurves_shortest_path_distance,success
 graph_embedding_feathergraph,success
 graph_embedding_graph2vec,success
 graph_embedding_netLSD,success
+kernel_core_framework,success
 kernel_neighborhood_hash,success
 kernel_pyramid_match,success
 kernel_shortest_path,success
 kernel_weisfeiler_lehman,success
+kernel_weisfeiler_lehman_optimal_assignment,success
+toper_degree,success
+toper_fricci,success
+toper_popularity,success
