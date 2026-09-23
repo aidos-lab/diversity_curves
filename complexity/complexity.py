@@ -8,6 +8,7 @@ from karateclub import NetLSD, Graph2Vec, FeatherGraph
 import toper
 import argparse
 import signal
+import os
 
 # import mag_graph
 from magnipy.magnitude.distances import get_dist
@@ -70,13 +71,7 @@ def fast_get_mag_graphs(
         upsample_to=None,
         n_repeats=5,
         compute_at_cardinality=None,
-        mode="full",
-        scores_method="random",
-        upsample_method="nodes",
-        downsample_to=None,
-        upsample_mode="node_duplicating",
-        coarsening = "edges", 
-        set_seed=True):
+        ):
     compute_at_cardinality = set(int(c) for c in compute_at_cardinality)
     min_cardinality = min(compute_at_cardinality) if compute_at_cardinality else 2
     spread_dfs = []
@@ -210,7 +205,7 @@ if __name__ == '__main__':
                 def dist_fn(G):
                     return get_dist(G=G, X=None, X2=None, metric=metric, mode="structure")#"euclidean", mode="attributes") # structure # full
 
-                all_spreads, weights_lists = fast_get_mag_graphs(graphs[n], dist_fn, ts=[1], n_repeats=1, scores_method='random', compute_at_cardinality=compute_at_cardinality, mode="structure")
+                all_spreads = fast_get_mag_graphs(graphs[n], dist_fn, ts=[1], n_repeats=1, compute_at_cardinality=compute_at_cardinality)
 
                 end_time = time.perf_counter()
 
@@ -372,4 +367,6 @@ if __name__ == '__main__':
             times[f'spectral_zoo'][(n, 'std')] = np.std(samples)
 
     times_df = pd.DataFrame.from_dict(times, orient="index")
+    if not os.path.exists('./results_cluster/'):
+            os.makedirs('./results_cluster/', exist_ok=True)
     times_df.to_csv(f"./results_cluster/time_complexities_{method}_ngraphs_{n_graphs}_maxnodes_{max(n_nodes)}.csv")
