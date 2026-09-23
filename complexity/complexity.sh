@@ -4,7 +4,9 @@
 #SBATCH --output=logs/output_%j.out
 #SBATCH --error=logs/error_%j.err
 #SBATCH --ntasks=1
-#SBATCH --partition=CPU
+#SBATCH --partition=GPU
+#SBATCH --nodelist=diufrd205
+#SBATCH --gres=gpu:0
 #SBATCH --cpus-per-task=4
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=nadja.haeusermann@unifr.ch
