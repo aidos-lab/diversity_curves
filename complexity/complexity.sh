@@ -20,7 +20,7 @@ python --version
 
 # echo "task $((SLURM_ARRAY_TASK_ID)), sim_distributions with ${config}."
 
-uv run -m complexity/complexity.py --method fast_divcurve
+uv run -m complexity/complexity --method fast_divcurve
 
 echo "Display the host name End"
 pwd; hostname; date
