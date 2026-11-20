@@ -126,17 +126,18 @@ if __name__ == '__main__':
         def dist_fn(G):
             return get_dist(G=G, X=None, X2=None, metric=metric, mode="structure")
         
-        all_spreads, weights_lists = get_mag_graphs(G_nx, dist_fn, ts=[1], upsample_to=upsample_to, downsample_to=downsample_to, n_repeats=3, scores_method='random', mode='structure', set_seed=False)
+        all_spreads, weights_lists = get_mag_graphs(G_nx, dist_fn, ts=[1], upsample_to=upsample_to, downsample_to=downsample_to, n_repeats=3, scores_method='random', mode='structure', set_seed=True)
     
         
         mag_funs = get_funs_df(all_spreads)
         mag_funs_interpolated = mag_funs.interpolate(method='linear', axis='columns')
 
         # compute clustering metrics based on euclidean distance of diversity curve vectors 
-        ari_kmeans_mean, ari_kmeans_std = compute_rand_kmeans(np.array(mag_funs_interpolated), y)
-        ari_agglo_mean, ari_agglo_std = compute_rand_agglo(np.array(mag_funs_interpolated), y, metric='euclidean')
+        set_seed=True
+        ari_kmeans_mean, ari_kmeans_std = compute_rand_kmeans(np.array(mag_funs_interpolated), y, set_seed=set_seed)
+        ari_agglo_mean, ari_agglo_std = compute_rand_agglo(np.array(mag_funs_interpolated), y, metric='euclidean', set_seed=set_seed)
 
-        means, stds = compute_clustering_scores_resample(np.array(mag_funs_interpolated), y)
+        means, stds = compute_clustering_scores_resample(np.array(mag_funs_interpolated), y, set_seed=set_seed)
 
         res_dict[f'divcurves_{metric}']['silh_mean'], res_dict[f'divcurves_{metric}']['db_mean'], res_dict[f'divcurves_{metric}']['ch_mean'] = means
         res_dict[f'divcurves_{metric}']['silh_std'], res_dict[f'divcurves_{metric}']['db_std'], res_dict[f'divcurves_{metric}']['ch_std'] = stds
@@ -168,7 +169,7 @@ if __name__ == '__main__':
         
         res_dict[f'divcurves_pca_{metric}']['acc_mean'] = np.mean(test_accs)
         res_dict[f'divcurves_pca_{metric}']['acc_std'] = np.std(test_accs)
-        all_clustering_results_euclidean(f'divcurves_pca_{metric}', res_dict, X_pca, y)
+        all_clustering_results_euclidean(f'divcurves_pca_{metric}', res_dict, X_pca, y, set_seed=set_seed)
 
         # creating plots
         fig = sns.scatterplot(x=X_pca[:,0], y=X_pca[:,1], hue=hue_names, palette='tab10')
@@ -221,7 +222,7 @@ if __name__ == '__main__':
         'avg_shortest_path': lambda G: np.mean([nx.average_shortest_path_length(G.subgraph(c).copy()) for c in nx.connected_components(G)]),
         'max_diameter': lambda G: np.max([nx.diameter(G.subgraph(c).copy()) for c in nx.connected_components(G)]),
         'deg_statistic': lambda G: sorted(list(dict(G.degree()).values())),
-        'laplacian_spectrum_pad': lambda G: nx.laplacian_spectrum(G),
+        # 'laplacian_spectrum_pad': lambda G: nx.laplacian_spectrum(G),
         'laplacian_spectrum_bin': lambda G: binned_norm_spectra(G),
     }
 
@@ -252,7 +253,7 @@ if __name__ == '__main__':
         res_dict[f'structure_baseline_{n_baseline}'] = {}
         res_dict[f'structure_baseline_{n_baseline}'] = {}
 
-        all_clustering_results_euclidean(f'structure_baseline_{n_baseline}', res_dict, array, y) 
+        all_clustering_results_euclidean(f'structure_baseline_{n_baseline}', res_dict, array, y, set_seed=set_seed) 
         
         if n_graphs > 1:
             test_accs = knn_classifier(array, np.array(y), precomputed=False, groups=np.array(n_nodes))
@@ -270,7 +271,7 @@ if __name__ == '__main__':
     res_dict[f'structure_baseline_summary'] = {}
     res_dict[f'structure_baseline_summary'] = {}
 
-    all_clustering_results_euclidean(f'structure_baseline_summary', res_dict, array_sum_stat, y) 
+    all_clustering_results_euclidean(f'structure_baseline_summary', res_dict, array_sum_stat, y, set_seed=set_seed) 
     
     if n_graphs > 1:
         test_accs = knn_classifier(array_sum_stat, np.array(y), precomputed=False, groups=np.array(n_nodes))

@@ -162,8 +162,8 @@ if __name__ == '__main__':
     args = argparser.parse_args()
     method = args.method
 
-    # n_nodes = [2**i for i in range(4, 6)]
-    n_nodes = [2**i for i in range(4, 14)]
+    n_nodes = [2**i for i in range(4, 13)]
+    # n_nodes = [2**i for i in range(4, 14)]
     n_graphs = 30
     n_reruns = 10
     max_n_mag = 100
@@ -209,7 +209,7 @@ if __name__ == '__main__':
 
                 end_time = time.perf_counter()
 
-                samples.append(end_time - start_time) 
+                samples.append(end_time - start_time)
             times[f'spread_{metric}'][(n, 'mean')] = np.mean(samples)
             times[f'spread_{metric}'][(n, 'std')] = np.std(samples)
 
@@ -264,26 +264,46 @@ if __name__ == '__main__':
     if method == 'embedding':
         embeddings = {
             'netLSD': NetLSD(),
-            'graph2vec': Graph2Vec(),
-            'feathergraph': FeatherGraph()
+            # 'graph2vec': Graph2Vec(),
+            # 'feathergraph': FeatherGraph()
         }
 
         for embedding_name in embeddings:
             times[f'embedding_{embedding_name}'] = {}
-            for n in n_nodes:
+            overtime = False
+            for i,n in enumerate(n_nodes):
                 samples = []
+                # for i in range(n_reruns):
+                #     start_time = time.perf_counter()
+                #     embedding = embeddings[embedding_name]
+                #     embedding.fit([g.copy() for g in graphs[n]])
+                #     array = embedding.get_embedding()
+                #     end_time = time.perf_counter()
+                #     samples.append(end_time - start_time)
+                # times[f'embedding_{embedding_name}'][(n, 'mean')] = np.mean(samples)
+                # times[f'embedding_{embedding_name}'][(n, 'std')] = np.std(samples)
+                n_success = 0
+                if overtime:
+                    times[f'embedding_{embedding_name}'][(n, 'mean')] = times[f'embedding_{embedding_name}'][(n_nodes[i-1], 'mean')]
                 for i in range(n_reruns):
-                    start_time = time.perf_counter()
-                    embedding = embeddings[embedding_name]
-                    embedding.fit([g.copy() for g in graphs[n]])
-                    array = embedding.get_embedding()
-                    end_time = time.perf_counter()
-                    samples.append(end_time - start_time)
-                times[f'embedding_{embedding_name}'][(n, 'mean')] = np.mean(samples)
-                times[f'embedding_{embedding_name}'][(n, 'std')] = np.std(samples)
+                    try:
+                        start_time = time.perf_counter()
+                        embedding = embeddings[embedding_name]
+                        embedding.fit([g.copy() for g in graphs[n]])
+                        array = embedding.get_embedding()
+                        end_time = time.perf_counter()
+                        if end_time - start_time >= 20:
+                            overtime=True
+                        samples.append(end_time - start_time)
+                        n_success += 1
+                    except MemoryError as e:
+                        print(f'Memory Error {e} for filtration {filtration}')
+                if n_success == n_reruns:
+                    times[f'embedding_{embedding_name}'][(n, 'mean')] = np.mean(samples)
+                    times[f'embedding_{embedding_name}'][(n, 'std')] = np.std(samples)
 
 
-    # graph embeddings
+    # ph
     if method == 'ph':
         ph_filtrations = ['degree', 'ollivier_ricci_curvature', 'forman_ricci_curvature', 'laplacian', 'vietoris_rips', 'alpha_complex']
 
@@ -297,7 +317,7 @@ if __name__ == '__main__':
                         start_time = time.perf_counter()
                         array_ph = obtain_input_from_graphs(graphs[n], filtration_fn_name=filtration, k=2)
                         end_time = time.perf_counter()
-                        samples.appemd(end_time - start_time)
+                        samples.append(end_time - start_time)
                         success += 1
                     except MemoryError as e:
                         print(f'Memory Error {e} for filtration {filtration}')
@@ -367,6 +387,6 @@ if __name__ == '__main__':
             times[f'spectral_zoo'][(n, 'std')] = np.std(samples)
 
     times_df = pd.DataFrame.from_dict(times, orient="index")
-    if not os.path.exists('./results_cluster/'):
-            os.makedirs('./results_cluster/', exist_ok=True)
-    times_df.to_csv(f"./results_cluster/time_complexities_{method}_ngraphs_{n_graphs}_maxnodes_{max(n_nodes)}.csv")
+    if not os.path.exists('./results_test/'):
+            os.makedirs('./results_test/', exist_ok=True)
+    times_df.to_csv(f"./results_test/time_complexities_{method}_ngraphs_{n_graphs}_maxnodes_{max(n_nodes)}.csv")

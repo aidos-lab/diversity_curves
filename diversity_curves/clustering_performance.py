@@ -135,11 +135,11 @@ def compute_silhouette_score_resamples(X, labels, n_resamples=100):
     return np.mean(silhouette_scores), np.std(silhouette_scores)
 
 
-def all_clustering_results_euclidean(method, df, X, y):
-    ari_kmeans_mean, ari_kmeans_std = compute_rand_kmeans(X, y)
-    ari_agglo_mean, ari_agglo_std = compute_rand_agglo(X, y, metric="euclidean")
+def all_clustering_results_euclidean(method, df, X, y, set_seed):
+    ari_kmeans_mean, ari_kmeans_std = compute_rand_kmeans(X, y, set_seed=set_seed)
+    ari_agglo_mean, ari_agglo_std = compute_rand_agglo(X, y, metric="euclidean", set_seed=set_seed)
 
-    means, stds = compute_clustering_scores_resample(X, y)
+    means, stds = compute_clustering_scores_resample(X, y, set_seed=set_seed)
 
     df[method]["silh_mean"], df[method]["db_mean"], df[method]["ch_mean"] = means
     df[method]["silh_std"], df[method]["db_std"], df[method]["ch_std"] = stds
@@ -150,11 +150,11 @@ def all_clustering_results_euclidean(method, df, X, y):
 
     return
 
-def all_clustering_results_euclidean_append(method, df, X, y):
-    ari_kmeans_mean, ari_kmeans_std = compute_rand_kmeans(X, y)
-    ari_agglo_mean, ari_agglo_std = compute_rand_agglo(X, y, metric="euclidean")
+def all_clustering_results_euclidean_append(method, df, X, y, set_seed):
+    ari_kmeans_mean, ari_kmeans_std = compute_rand_kmeans(X, y, set_seed=set_seed)
+    ari_agglo_mean, ari_agglo_std = compute_rand_agglo(X, y, metric="euclidean", set_seed=set_seed)
 
-    means, stds = compute_clustering_scores_resample(X, y)
+    means, stds = compute_clustering_scores_resample(X, y, set_seed=set_seed)
 
     df[method]["silh_mean"].append(means[0])
     df[method]["db_mean"].append(means[1])

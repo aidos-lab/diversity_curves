@@ -354,6 +354,10 @@ if __name__ == "__main__":
                     l2norm = np.linalg.norm([curve_i - curve_j], ord=None)
                     all_diffs.append(l2norm)
 
+        # add version to distance average vurve over multiset?
+
+        # add version nauty/graph canonization?
+
         #control with random curves
         for seed_i in range(n_seeds):
             for seed_j in range(seed_i+1, n_seeds):
